@@ -1,45 +1,17 @@
+import { IProduct } from '@/lib/types/Product';
 import mongoose, { Document, Schema } from 'mongoose';
 
-export interface IProduct extends Document {
-  name: string;
-  genericName: string;
-  description: string;
-  detailedDescription: string;
-  category: string;
-  subCategory?: string;
-  manufacturer: string;
-  dosageForm: string;
-  strength: string;
-  packageSize: string;
-  price: number;
-  originalPrice?: number;
-  images: string[];
-  indications: string[];
-  dosageInstructions: string;
-  sideEffects: string[];
-  precautions: string[];
-  contraindications: string[];
-  storageInstructions: string;
-  requiresPrescription: boolean;
-  isAvailable: boolean;
-  stockQuantity: number;
-  sku: string;
-  barcode?: string;
-  therapeuticClass: string;
-  activeIngredients: {
-    name: string;
-    strength: string;
-  }[];
-  tags: string[];
-  rating?: number;
-  reviewCount?: number;
-  featured: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+export interface IMongooseProduct extends Omit<IProduct, '_id'>, Document {
+  _id: string;
 }
 
-const ProductSchema: Schema = new Schema(
+const ProductSchema: Schema<IMongooseProduct> = new Schema(
   {
+    // allow storing provided _id as string when creating from mock data
+    _id: {
+      type: String,
+      required: true,
+    },
     name: {
       type: String,
       required: true,
@@ -58,24 +30,10 @@ const ProductSchema: Schema = new Schema(
       type: String,
       required: true,
     },
+    // make category open-ended to support mock categories like 'Baby Care', etc.
     category: {
       type: String,
       required: true,
-      enum: [
-        'Analgesics',
-        'Antibiotics',
-        'Antihypertensives',
-        'Antidiabetics',
-        'Antidepressants',
-        'Vitamins',
-        'Supplements',
-        'Cardiovascular',
-        'Gastrointestinal',
-        'Respiratory',
-        'Dermatological',
-        'Ophthalmic',
-        'Other',
-      ],
     },
     subCategory: {
       type: String,
@@ -86,23 +44,10 @@ const ProductSchema: Schema = new Schema(
       required: true,
       trim: true,
     },
-    dosageForm: {
+    // allow flexible form values (item names in mock data use 'Item', 'Wipes', etc.)
+    form: {
       type: String,
       required: true,
-      enum: [
-        'Tablet',
-        'Capsule',
-        'Syrup',
-        'Injection',
-        'Ointment',
-        'Cream',
-        'Drops',
-        'Inhaler',
-        'Powder',
-        'Solution',
-        'Suspension',
-        'Other',
-      ],
     },
     strength: {
       type: String,
@@ -144,7 +89,7 @@ const ProductSchema: Schema = new Schema(
       type: String,
       required: true,
     },
-    requiresPrescription: {
+    isPrescription: {
       type: Boolean,
       default: false,
     },
@@ -202,4 +147,4 @@ const ProductSchema: Schema = new Schema(
   }
 );
 
-export default mongoose.models.Product || mongoose.model<IProduct>('Product', ProductSchema);
+export default mongoose.models.Product || mongoose.model<IMongooseProduct>('Product', ProductSchema);

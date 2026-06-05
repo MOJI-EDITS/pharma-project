@@ -1,118 +1,141 @@
 import Link from 'next/link';
-import { Phone, Mail, MapPin, Clock } from 'lucide-react';
+import { Headphones, Mail, CreditCard, Truck, Zap, Shield, Clock, PackageCheck } from 'lucide-react';
 
 export default function Footer() {
   return (
-    <footer className="bg-gray-900 text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Company Info */}
-          <div className="col-span-1 md:col-span-2">
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">P+</span>
-              </div>
-              <span className="text-xl font-bold">PharmaPlus</span>
+    <footer className="bg-[#1e3a8a] text-white">
+      <div className="border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+              <h3 className="text-sm font-bold mb-4 uppercase">Customer Care</h3>
+              <ul className="space-y-2 text-sm">
+                <li><Link href="/help" className="text-gray-300 hover:text-white">Help Center</Link></li>
+                <li><Link href="/contact" className="text-gray-300 hover:text-white">Contact Us</Link></li>
+                <li><Link href="/returns" className="text-gray-300 hover:text-white">How to Return</Link></li>
+                <li><Link href="/track-order" className="text-gray-300 hover:text-white">Track Order</Link></li>
+                <li><Link href="/warranty" className="text-gray-300 hover:text-white">Warranty Policy</Link></li>
+              </ul>
             </div>
-            <p className="text-gray-400 mb-4 max-w-md">
-              Your trusted partner in healthcare. We provide premium pharmaceutical products 
-              and healthcare solutions with fast delivery and expert support.
-            </p>
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2 text-gray-400">
-                <Phone className="w-4 h-4" />
-                <span>+1 (555) 123-4567</span>
+            
+            <div>
+              <h3 className="text-sm font-bold mb-4 uppercase">Pharma Plus</h3>
+              <ul className="space-y-2 text-sm">
+                <li><Link href="/about" className="text-gray-300 hover:text-white">About Pharma Plus</Link></li>
+                <li><Link href="/careers" className="text-gray-300 hover:text-white">Join Pharma Plus</Link></li>
+                <li><Link href="/terms" className="text-gray-300 hover:text-white">Terms & Conditions</Link></li>
+                <li><Link href="/privacy" className="text-gray-300 hover:text-white">Privacy Policy</Link></li>
+                <li><Link href="/digital" className="text-gray-300 hover:text-white">Digital Services</Link></li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="text-sm font-bold mb-4 uppercase">Make Money with Us</h3>
+              <ul className="space-y-2 text-sm">
+                <li><Link href="/sell" className="text-gray-300 hover:text-white">Sell on Pharma Plus</Link></li>
+                <li><Link href="/affiliate" className="text-gray-300 hover:text-white">Pharma Plus Affiliate Program</Link></li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="text-sm font-bold mb-4 uppercase">Payment & Delivery</h3>
+              
+              {/* Payment Methods */}
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                <CreditCard className="w-4 h-4 text-white" />
+                <p className="text-sm text-white font-semibold">Payment Methods</p>
               </div>
-              <div className="flex items-center space-x-2 text-gray-400">
-                <Mail className="w-4 h-4" />
-                <span>support@pharmaplus.com</span>
+              <div className="flex flex-wrap gap-2 mb-2">
+                <div className="w-20 h-9 bg-white/90 rounded flex items-center justify-center text-xs font-semibold text-gray-800 shadow-sm">
+                  JazzCash
+                </div>
+                <div className="w-20 h-9 bg-white/90 rounded flex items-center justify-center text-xs font-semibold text-gray-800 shadow-sm">
+                  EasyPaisa
+                </div>
+                <div className="w-20 h-9 bg-white/90 rounded flex items-center justify-center text-xs font-semibold text-gray-800 shadow-sm">
+                  COD
+                </div>
+                <div className="w-20 h-9 bg-white/90 rounded flex items-center justify-center text-xs font-semibold text-gray-800 shadow-sm">
+                  Visa
+                </div>
+                <div className="w-20 h-9 bg-white/90 rounded flex items-center justify-center text-xs font-semibold text-gray-800 shadow-sm">
+                  Mastercard
+                </div>
               </div>
-              <div className="flex items-center space-x-2 text-gray-400">
-                <MapPin className="w-4 h-4" />
-                <span>123 Healthcare St, Medical City</span>
               </div>
-              <div className="flex items-center space-x-2 text-gray-400">
-                <Clock className="w-4 h-4" />
-                <span>24/7 Customer Support</span>
+              
+              {/* Delivery Partners */}
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                <Truck className="w-4 h-4 text-white" />
+                <p className="text-sm text-white font-semibold">Delivery Partners</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <div className="w-20 h-9 bg-white/90 rounded flex items-center justify-center text-xs font-semibold text-gray-800 shadow-sm">
+                  TCS
+                </div>
+                <div className="w-20 h-9 bg-white/90 rounded flex items-center justify-center text-xs font-semibold text-gray-800 shadow-sm">
+                  Trax
+                </div>
+                <div className="w-20 h-9 bg-white/90 rounded flex items-center justify-center text-xs font-semibold text-gray-800 shadow-sm">
+                  M&P
+                </div>
+                <div className="w-20 h-9 bg-white/90 rounded flex items-center justify-center text-xs font-semibold text-gray-800 shadow-sm">
+                  BlueEx
+                </div>
+                <div className="w-20 h-9 bg-white/90 rounded flex items-center justify-center text-xs font-semibold text-gray-800 shadow-sm">
+                  Call Courier
+                </div>
+              </div>
+              </div>
+              
+              {/* Why Choose Us */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <PackageCheck className="w-4 h-4 text-white" />
+                  <p className="text-sm text-white font-semibold">Why Choose Us</p>
+                </div>
+                <ul className="space-y-2 text-xs text-white">
+                  <li className="flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5 text-white" />
+                    Same-Day Delivery in Major Cities
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Shield className="w-3.5 h-3.5 text-white" />
+                    100% Authentic Medicines
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Zap className="w-3.5 h-3.5 text-white" />
+                    Easy Returns & Refunds
+                  </li>
+                </ul>
               </div>
             </div>
-          </div>
-
-          {/* Quick Links */}
-          <div>
-            <h3 className="font-semibold mb-4">Quick Links</h3>
-            <ul className="space-y-2 text-gray-400">
-              <li>
-                <Link href="/products" className="hover:text-blue-400 transition-colors">
-                  All Products
-                </Link>
-              </li>
-              <li>
-                <Link href="/categories" className="hover:text-blue-400 transition-colors">
-                  Categories
-                </Link>
-              </li>
-              <li>
-                <Link href="/prescriptions" className="hover:text-blue-400 transition-colors">
-                  Prescriptions
-                </Link>
-              </li>
-              <li>
-                <Link href="/health-tips" className="hover:text-blue-400 transition-colors">
-                  Health Tips
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Categories */}
-          <div>
-            <h3 className="font-semibold mb-4">Categories</h3>
-            <ul className="space-y-2 text-gray-400">
-              <li>
-                <Link href="/category/pain-relief" className="hover:text-blue-400 transition-colors">
-                  Pain Relief
-                </Link>
-              </li>
-              <li>
-                <Link href="/category/cold-flu" className="hover:text-blue-400 transition-colors">
-                  Cold & Flu
-                </Link>
-              </li>
-              <li>
-                <Link href="/category/allergy" className="hover:text-blue-400 transition-colors">
-                  Allergy
-                </Link>
-              </li>
-              <li>
-                <Link href="/category/digestive" className="hover:text-blue-400 transition-colors">
-                  Digestive Health
-                </Link>
-              </li>
-              <li>
-                <Link href="/category/vitamins" className="hover:text-blue-400 transition-colors">
-                  Vitamins & Supplements
-                </Link>
-              </li>
-            </ul>
           </div>
         </div>
-
-        {/* Bottom Bar */}
-        <div className="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-gray-400 text-sm">
-            © 2024 PharmaPlus. All rights reserved.
-          </p>
-          <div className="flex space-x-6 mt-4 md:mt-0">
-            <Link href="/privacy" className="text-gray-400 hover:text-blue-400 text-sm transition-colors">
-              Privacy Policy
-            </Link>
-            <Link href="/terms" className="text-gray-400 hover:text-blue-400 text-sm transition-colors">
-              Terms of Service
-            </Link>
-            <Link href="/shipping" className="text-gray-400 hover:text-blue-400 text-sm transition-colors">
-              Shipping Info
-            </Link>
+      </div>
+      
+      <div className="bg-[#1e293b]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="flex items-center space-x-2 mb-4 md:mb-0">
+              <div className="w-8 h-8 bg-[#2563eb] rounded flex items-center justify-center text-white font-black text-lg">P</div>
+              <span className="text-lg font-bold">Pharma Plus</span>
+            </div>
+            
+            <div className="flex items-center space-x-4 text-xs text-white">
+              <div className="flex items-center space-x-1">
+                <Headphones className="w-4 h-4" />
+                <span>0311 113 2529</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Mail className="w-4 h-4" />
+                <span>help@pharmaplus.pk</span>
+              </div>
+            </div>
+            
+            <p className="text-xs text-white/70 mt-4 md:mt-0">© 2025 Pharma Plus. All rights reserved.</p>
           </div>
         </div>
       </div>

@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import Providers from '@/components/Providers';
+import AIPharmacist from '@/components/ai/AIPharmacist';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -19,11 +21,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Header />
-        <main className="min-h-screen">
-          {children}
-        </main>
-        <Footer />
+        <Providers>
+          <Header />
+          <main className="min-h-screen">
+            {children}
+          </main>
+          <AIPharmacist />
+          <Footer />
+        </Providers>
       </body>
     </html>
   );

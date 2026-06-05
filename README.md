@@ -31,6 +31,21 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This project is already linked to a Vercel project and includes a `vercel.json` deployment config.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Recommended deployment steps
+
+1. Deploy using Vercel from the dashboard or CLI.
+2. Add these environment variables to the project settings:
+   - `MONGODB_URI`
+   - `NEXTAUTH_URL`
+   - `NEXTAUTH_SECRET`
+   - `OPENAI_API_KEY`
+   - `STRIPE_SECRET_KEY`
+   - `NEXT_PUBLIC_APP_URL`
+   - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (optional for Google sign-in)
+3. Keep secrets in Vercel configuration only. Do not commit `.env.local` or any secret files.
+
+The build command is `npm run build` and the app will deploy as a standard Next.js application.
+
+For more details, see the [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying).

@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Plus, Minus, ShoppingCart } from 'lucide-react';
-import { useCartStore, type CartItem } from '@/lib/store/cartStore';
+import { X, Plus, Minus, ShoppingCart, ArrowRight } from 'lucide-react';
+import { useCartStore } from '@/lib/store/cartStore';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 interface CartProps {
   isOpen: boolean;
@@ -11,18 +13,44 @@ interface CartProps {
 
 export default function Cart({ isOpen, onClose }: CartProps) {
   const { items, removeItem, updateQuantity, getTotal, clearCart } = useCartStore();
-  const [isCheckout, setIsCheckout] = useState(false);
+  const { data: session } = useSession();
+  const router = useRouter();
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleCheckout = () => {
-    setIsCheckout(true);
-    // Simulate checkout process
-    setTimeout(() => {
-      clearCart();
-      setIsCheckout(false);
+  const handleCheckout = async () => {
+    if (!session) {
+      router.push('/auth/signin?callbackUrl=/cart');
       onClose();
-    }, 2000);
+      return;
+    }
+
+    setIsCheckingOut(true);
+
+    try {
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ items }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        window.location.href = data.url;
+      } else {
+        console.error('Checkout error:', data.error);
+        alert('Failed to start checkout. Please try again.');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsCheckingOut(false);
+    }
   };
 
   return (
@@ -32,11 +60,11 @@ export default function Cart({ isOpen, onClose }: CartProps) {
       <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-xl">
         <div className="flex h-full flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between border-b px-6 py-4">
-            <h2 className="text-lg font-semibold">Shopping Cart</h2>
+          <div className="flex items-center justify-between border-b px-6 py-4 bg-[#2563eb]">
+            <h2 className="text-lg font-semibold text-white">Shopping Cart</h2>
             <button
               onClick={onClose}
-              className="rounded-md p-2 text-gray-400 hover:text-gray-500"
+              className="rounded-md p-2 text-white hover:bg-white/20"
             >
               <X className="h-6 w-6" />
             </button>
@@ -50,7 +78,7 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                 <p className="text-gray-500">Your cart is empty</p>
                 <button
                   onClick={onClose}
-                  className="mt-4 text-blue-600 hover:text-blue-700"
+                  className="mt-4 text-[#2563eb] hover:text-[#1d4ed8] font-semibold"
                 >
                   Continue shopping
                 </button>
@@ -62,7 +90,7 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                     <div className="flex-1">
                       <h3 className="font-medium text-gray-900">{item.name}</h3>
                       <p className="text-sm text-gray-500">{item.strength} • {item.form}</p>
-                      <p className="text-sm font-semibold text-blue-600">${item.price}</p>
+                      <p className="text-sm font-semibold text-[#2563eb]">Rs{item.price}</p>
                     </div>
                     
                     <div className="flex items-center space-x-2">
@@ -99,23 +127,33 @@ export default function Cart({ isOpen, onClose }: CartProps) {
 
           {/* Footer */}
           {items.length > 0 && (
-            <div className="border-t px-6 py-4">
+            <div className="border-t px-6 py-4 bg-gray-50">
               <div className="flex justify-between text-lg font-semibold mb-4">
-                <span>Total:</span>
-                <span>${getTotal().toFixed(2)}</span>
+                <span className="text-gray-700">Total:</span>
+                <span className="text-[#2563eb]">Rs{getTotal().toFixed(2)}</span>
               </div>
               
               <button
                 onClick={handleCheckout}
-                disabled={isCheckout}
-                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isCheckingOut}
+                className="w-full bg-[#2563eb] text-white py-3 px-4 rounded-lg hover:bg-[#1d4ed8] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-semibold shadow-sm"
               >
-                {isCheckout ? 'Processing...' : 'Proceed to Checkout'}
+                {isCheckingOut ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    Proceed to Checkout
+                    <ArrowRight className="h-5 w-5" />
+                  </>
+                )}
               </button>
               
               <button
                 onClick={clearCart}
-                className="mt-2 w-full text-red-600 hover:text-red-700 text-sm"
+                className="mt-2 w-full text-red-600 hover:text-red-700 text-sm font-semibold"
               >
                 Clear cart
               </button>

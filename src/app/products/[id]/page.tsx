@@ -1,23 +1,48 @@
 'use client';
 
-import { use } from 'react';
 import { useParams } from 'next/navigation';
+import { Star, ShoppingCart, Truck, Shield, Clock } from 'lucide-react';
+import { getProductById } from '@/lib/data/products';
+import { useCartStore } from '@/lib/store/cartStore';
 import Image from 'next/image';
-import { Star, ShoppingCart, Heart, Truck, Shield, Clock } from 'lucide-react';
-import { productsData, getProductById } from '@/lib/data/products';
+import { useEffect, useState } from 'react';
+import type { IProduct } from '@/lib/types/Product';
 
 export default function ProductDetailPage() {
   const params = useParams();
   const productId = params.id as string;
   
-  const product = getProductById(productId);
+  const [product, setProduct] = useState<IProduct | undefined>(() => {
+    const base = getProductById(productId);
+    return base ? { ...base, images: [] } : base;
+  });
+  const { addItem } = useCartStore();
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const res = await fetch(`/api/products?id=${encodeURIComponent(productId)}`, { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (active) {
+          setProduct(data);
+        }
+      } catch {
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [productId]);
 
   if (!product) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Product Not Found</h1>
-          <p className="text-gray-600">The product you're looking for doesn't exist.</p>
+          <p className="text-gray-600">The product you&apos;re looking for doesn&apos;t exist.</p>
         </div>
       </div>
     );
@@ -40,10 +65,23 @@ export default function ProductDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Product Image */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="w-full h-80 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg flex items-center justify-center">
-              <div className="w-24 h-24 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-2xl">P+</span>
-              </div>
+            <div className="w-full h-80 rounded-lg overflow-hidden bg-gray-100 relative">
+              {product.images && product.images.length > 0 ? (
+                <Image
+                  src={product.images[0]}
+                  alt={product.name}
+                  fill
+                  className="object-cover"
+                  sizes="(min-width:1024px) 50vw, 100vw"
+                  priority={false}
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+                  <div className="w-24 h-24 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <span className="text-white font-bold text-2xl">P+</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -58,7 +96,7 @@ export default function ProductDetailPage() {
                   <Star
                     key={i}
                     className={`w-5 h-5 ${
-                      i < Math.floor(product.rating)
+                      i < Math.floor(product.rating || 0)
                         ? 'text-yellow-400 fill-current'
                         : 'text-gray-300'
                     }`}
@@ -74,16 +112,16 @@ export default function ProductDetailPage() {
             <div className="mb-6">
               <div className="flex items-center space-x-4">
                 <span className="text-3xl font-bold text-gray-900">
-                  ${product.price}
+                  Rs{product.price}
                 </span>
                 {product.originalPrice && product.originalPrice > product.price && (
                   <span className="text-xl text-gray-500 line-through">
-                    ${product.originalPrice}
+                    Rs{product.originalPrice}
                   </span>
                 )}
                 {product.originalPrice && product.originalPrice > product.price && (
                   <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-semibold">
-                    Save ${(product.originalPrice - product.price).toFixed(2)}
+                    Save Rs{(product.originalPrice - product.price).toFixed(2)}
                   </span>
                 )}
               </div>
@@ -94,7 +132,20 @@ export default function ProductDetailPage() {
 
             {/* Add to Cart */}
             <div className="mb-6">
-              <button className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 font-semibold">
+              <button
+                onClick={() =>
+                  addItem({
+                    id: product._id,
+                    name: product.name,
+                    price: product.price,
+                    strength: product.strength,
+                    form: product.form,
+                    isPrescription: product.isPrescription,
+                    image: product.images?.[0],
+                  })
+                }
+                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 font-semibold"
+              >
                 <ShoppingCart className="w-5 h-5" />
                 <span>Add to Cart</span>
               </button>
@@ -142,31 +193,55 @@ export default function ProductDetailPage() {
           </div>
         </div>
 
-        {/* Additional Information Tabs */}
         <div className="mt-8 bg-white rounded-lg shadow-md">
-          <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-6">
-              <button className="py-4 px-2 border-b-2 border-blue-600 text-blue-600 font-semibold">
-                Description
-              </button>
-              <button className="py-4 px-2 text-gray-500 hover:text-gray-700">
-                Dosage Instructions
-              </button>
-              <button className="py-4 px-2 text-gray-500 hover:text-gray-700">
-                Side Effects
-              </button>
-              <button className="py-4 px-2 text-gray-500 hover:text-gray-700">
-                Precautions
-              </button>
-            </nav>
-          </div>
+          <Tabs product={product} />
+        </div>
+      </div>
+    </div>
+  );
+}
 
-          <div className="p-6">
+function Tabs({ product }: { product: IProduct }) {
+  const [active, setActive] = useState<'description' | 'dosage' | 'sideEffects' | 'precautions'>('description');
+
+  return (
+    <>
+      <div className="border-b border-gray-200">
+        <nav className="flex space-x-8 px-6">
+          <button
+            className={`py-4 px-2 font-semibold ${active === 'description' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+            onClick={() => setActive('description')}
+          >
+            Description
+          </button>
+          <button
+            className={`py-4 px-2 font-semibold ${active === 'dosage' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+            onClick={() => setActive('dosage')}
+          >
+            Dosage Instructions
+          </button>
+          <button
+            className={`py-4 px-2 font-semibold ${active === 'sideEffects' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+            onClick={() => setActive('sideEffects')}
+          >
+            Side Effects
+          </button>
+          <button
+            className={`py-4 px-2 font-semibold ${active === 'precautions' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+            onClick={() => setActive('precautions')}
+          >
+            Precautions
+          </button>
+        </nav>
+      </div>
+
+      <div className="p-6">
+        {active === 'description' && (
+          <>
             <h3 className="text-lg font-semibold mb-4">Product Description</h3>
             <p className="text-gray-700 leading-relaxed">
               {product.description}
             </p>
-            
             <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h4 className="font-semibold mb-2">Key Benefits</h4>
@@ -177,15 +252,51 @@ export default function ProductDetailPage() {
                   <li>• Easy-to-use {product.form.toLowerCase()} form</li>
                 </ul>
               </div>
-              
               <div>
-                <h4 className="font-semibold mb-2">Ingredients</h4>
-                <p className="text-gray-600">{product.ingredients}</p>
+                <h4 className="font-semibold mb-2">Active Ingredients</h4>
+                <ul className="text-gray-600 space-y-1">
+                  {product.activeIngredients?.map((ingredient, index) => (
+                    <li key={index}>
+                      • {ingredient.name} {ingredient.strength}
+                    </li>
+                  )) || (
+                    <li>No ingredient information available</li>
+                  )}
+                </ul>
               </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
+
+        {active === 'dosage' && (
+          <>
+            <h3 className="text-lg font-semibold mb-4">Dosage Instructions</h3>
+            <p className="text-gray-700 leading-relaxed">{product.dosageInstructions}</p>
+          </>
+        )}
+
+        {active === 'sideEffects' && (
+          <>
+            <h3 className="text-lg font-semibold mb-4">Side Effects</h3>
+            <ul className="text-gray-700 space-y-1">
+              {(product.sideEffects && product.sideEffects.length > 0 ? product.sideEffects : ['Information not available']).map((item, idx) => (
+                <li key={idx}>• {item}</li>
+              ))}
+            </ul>
+          </>
+        )}
+
+        {active === 'precautions' && (
+          <>
+            <h3 className="text-lg font-semibold mb-4">Precautions</h3>
+            <ul className="text-gray-700 space-y-1">
+              {(product.precautions && product.precautions.length > 0 ? product.precautions : ['Follow healthcare professional guidance']).map((item, idx) => (
+                <li key={idx}>• {item}</li>
+              ))}
+            </ul>
+          </>
+        )}
       </div>
-    </div>
+    </>
   );
 }

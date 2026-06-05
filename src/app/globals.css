@@ -2,7 +2,7 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #0f172a;
 }
 
 @theme inline {
@@ -12,15 +12,97 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  font-size: 18px;
+  line-height: 1.8;
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Ensure all input fields have proper text color and no opacity issues */
+input, textarea, select {
+  color: #0f172a !important;
+}
+
+input::placeholder, textarea::placeholder, select::placeholder {
+  color: #6b7280 !important;
+  opacity: 1 !important;
+}
+
+a {
+  color: #1d4ed8;
+  text-decoration: none;
+}
+
+.dark a {
+  color: #60a5fa;
+}
+
+p a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+}
+
+p {
+  margin-bottom: 0.75rem;
+}
+
+::selection {
+  background: #bfdbfe;
+  color: #0f172a;
+}
+
+@layer components {
+  .text-gradient {
+    background: linear-gradient(90deg, #0ea5e9, #8b5cf6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .text-muted-strong {
+    color: #334155;
+  }
+
+  .dark .text-muted-strong {
+    color: #d1d5db;
+  }
+
+  .futuristic-card {
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0));
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px 0 rgba(0,0,0,0.37);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 12px;
+    transition: transform 0.3s ease-in-out;
+  }
+
+  .futuristic-card:hover {
+    transform: translateY(-5px);
+  }
+
+  .futuristic-button {
+    background: linear-gradient(45deg, #3b82f6, #a855f7);
+    color: white;
+    font-weight: bold;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s;
+  }
+
+  .futuristic-button:hover {
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5), 0 0 30px rgba(168, 85, 247, 0.3);
+    transform: scale(1.05);
+  }
+
+  .neon-text {
+    text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #3b82f6, 0 0 20px #3b82f6;
+  }
 }

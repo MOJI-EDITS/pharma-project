@@ -1,0 +1,11 @@
+# Vercel ignores
+node_modules
+.next
+out
+build
+.env*
+*.log
+.git
+.vscode
+.idea
+.DS_Store

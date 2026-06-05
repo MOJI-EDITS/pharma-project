@@ -1,9 +1,31 @@
+import dns from 'dns';
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/pharma-platform';
+const MONGODB_URI = process.env.MONGODB_URI;
 
-if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
+function ensureFallbackDns() {
+  try {
+    dns.setServers(['8.8.8.8', '8.8.4.4']);
+  } catch {
+    // ignore DNS configuration failures and fall back to system resolver
+  }
+}
+
+ensureFallbackDns();
+
+function isValidMongoUri(uri: string) {
+  return /^mongodb(?:\+srv)?:\/\/\S+$/.test(uri);
+}
+
+function getMongoUri() {
+  if (!MONGODB_URI) {
+    throw new Error('Please define MONGODB_URI in .env.local. Example: mongodb+srv://user:pass@cluster0.example.net/mydb?retryWrites=true&w=majority');
+  }
+  if (!isValidMongoUri(MONGODB_URI)) {
+    throw new Error('Invalid MONGODB_URI in .env.local. Ensure the URI is a valid MongoDB connection string.');
+  }
+
+  return MONGODB_URI;
 }
 
 /**
@@ -11,6 +33,13 @@ if (!MONGODB_URI) {
  * in development. This prevents connections growing exponentially
  * during API Route usage.
  */
+declare global {
+  var mongoose: {
+    conn: null | typeof mongoose;
+    promise: null | Promise<typeof mongoose>;
+  };
+}
+
 let cached = global.mongoose;
 
 if (!cached) {
@@ -27,9 +56,8 @@ async function dbConnect() {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      return mongoose;
-    });
+    // @ts-expect-error - Type issue with mongoose connect options
+cached.promise = mongoose.connect(getMongoUri(), opts).then((mg) => mg);
   }
 
   try {
