@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { X, Send, Bot, ShoppingCart } from 'lucide-react';
-import { productsData } from '@/lib/data/products';
+import { X, Send, Bot, ShoppingCart, Upload } from 'lucide-react';
 import { useCartStore } from '@/lib/store/cartStore';
 import { IProduct } from '@/lib/types/Product';
 
@@ -19,12 +18,17 @@ export default function AIPharmacist() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: "Hello! I'm your AI Pharmacist. How can I help you today? Describe your symptoms or ask about a product.",
+      text: "Hello! I'm your AI Pharmacist. Upload a prescription or describe your symptoms, and I'll recommend suitable products from our pharmacy.",
       sender: 'ai',
     },
   ]);
+  const [prescriptionText, setPrescriptionText] = useState('');
+  const [showPrescriptionInput, setShowPrescriptionInput] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { addItem } = useCartStore();
+  const [isThinking, setIsThinking] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -34,35 +38,25 @@ export default function AIPharmacist() {
     scrollToBottom();
   }, [messages]);
 
-  const analyzeSymptoms = (text: string): IProduct[] => {
-    const lowerText = text.toLowerCase();
-    const recommendations: IProduct[] = [];
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-    if (lowerText.includes('headache') || lowerText.includes('pain') || lowerText.includes('fever')) {
-      const painRelievers = productsData.filter(p => 
-        p.category === 'Pain Relief' || p.name.includes('Aspirin') || p.name.includes('Ibuprofen')
-      );
-      recommendations.push(...painRelievers);
+    // For demo, read text files or show a message for image files
+    if (file.type.startsWith('text/')) {
+      const text = await file.text();
+      setPrescriptionText(text);
+    } else if (file.type.startsWith('image/')) {
+      setPrescriptionText(`[Prescription uploaded: ${file.name}]\n(In a real scenario, this would be processed with OCR)`);
+    } else if (file.type === 'application/pdf') {
+      setPrescriptionText(`[PDF Prescription uploaded: ${file.name}]\n(In a real scenario, this would be processed)`);
     }
-
-    if (lowerText.includes('infection') || lowerText.includes('bacteria') || lowerText.includes('throat')) {
-      const antibiotics = productsData.filter(p => p.category === 'Antibiotics');
-      recommendations.push(...antibiotics);
-    }
-
-    if (lowerText.includes('allergy') || lowerText.includes('sneeze') || lowerText.includes('runny') || lowerText.includes('itch')) {
-      const allergyMeds = productsData.filter(p => p.category === 'Allergy');
-      recommendations.push(...allergyMeds);
-    }
-
-    // Deduplicate recommendations
-    return Array.from(new Set(recommendations));
   };
-
-  const [isThinking, setIsThinking] = useState(false);
 
   const handleSend = async () => {
     if (!input.trim()) return;
+
+    setErrorMessage(null);
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -78,34 +72,34 @@ export default function AIPharmacist() {
       const response = await fetch('/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: input }),
+        body: JSON.stringify({
+          prompt: input,
+          prescriptionData: prescriptionText,
+        }),
       });
       const data = await response.json();
+
       if (response.ok && data.response) {
         const aiMessage: Message = {
           id: (Date.now() + 1).toString(),
           text: data.response,
           sender: 'ai',
+          products: data.products && data.products.length > 0 ? data.products : undefined,
         };
         setMessages(prev => [...prev, aiMessage]);
+        setPrescriptionText('');
+        setShowPrescriptionInput(false);
       } else {
         throw new Error(data.error || 'AI service unavailable');
       }
-    } catch {
-      const recommendedProducts = analyzeSymptoms(userMessage.text);
-      let aiText = '';
-
-      if (recommendedProducts.length > 0) {
-        aiText = `Based on your symptoms, I recommend the following products. Please consult with a doctor if symptoms persist.`;
-      } else {
-        aiText = "I'm not sure which product to recommend for those symptoms. Please consult a healthcare professional for advice.";
-      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'AI service unavailable';
+      setErrorMessage(errorMsg);
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: aiText,
+        text: "I'm unable to process your request at the moment. Please try describing your symptoms or uploading your prescription again.",
         sender: 'ai',
-        products: recommendedProducts.length > 0 ? recommendedProducts : undefined,
       };
 
       setMessages(prev => [...prev, aiMessage]);
@@ -114,8 +108,9 @@ export default function AIPharmacist() {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
+      e.preventDefault();
       handleSend();
     }
   };
@@ -134,7 +129,7 @@ export default function AIPharmacist() {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-96 h-[600px] bg-white rounded-lg shadow-2xl flex flex-col z-50 border border-gray-200">
+        <div className="fixed bottom-6 right-6 w-96 h-[650px] bg-white rounded-lg shadow-2xl flex flex-col z-50 border border-gray-200">
           {/* Header */}
           <div className="p-4 bg-blue-600 text-white rounded-t-lg flex justify-between items-center">
             <div className="flex items-center space-x-2">
@@ -162,35 +157,53 @@ export default function AIPharmacist() {
                       : 'bg-white border border-gray-200 text-gray-800 rounded-bl-none shadow-sm'
                   }`}
                 >
-                  <p className="text-sm">{msg.text}</p>
+                  <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
                 </div>
 
                 {/* Product Recommendations */}
-                {msg.products && (
-                  <div className="mt-2 space-y-2 w-full max-w-[90%]">
+                {msg.products && msg.products.length > 0 && (
+                  <div className="mt-3 space-y-2 w-full max-w-[95%]">
+                    <p className="text-xs font-semibold text-gray-600 px-2">Recommended Products:</p>
                     {msg.products.map((product) => (
                       <div
                         key={product._id.toString()}
-                        className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm flex items-center justify-between"
+                        className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg border border-blue-200 shadow-sm hover:shadow-md transition-shadow"
                       >
-                        <div>
-                          <p className="font-medium text-sm text-gray-900">{product.name}</p>
-                          <p className="text-xs text-gray-500">Rs{product.price}</p>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <p className="font-semibold text-sm text-gray-900">{product.name}</p>
+                            <p className="text-xs text-gray-600">{product.genericName}</p>
+                            <p className="text-xs text-gray-500 mt-1">{product.description}</p>
+                            <div className="flex gap-2 mt-2 text-xs">
+                              <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                                {product.strength}
+                              </span>
+                              <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                                {product.form}
+                              </span>
+                            </div>
+                            <p className="font-bold text-green-600 mt-2">Rs{product.price}</p>
+                            {product.originalPrice && product.originalPrice > product.price && (
+                              <p className="text-xs text-gray-500 line-through">
+                                Rs{product.originalPrice}
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => addItem({
+                              id: product._id.toString(),
+                              name: product.name,
+                              price: product.price,
+                              strength: product.strength,
+                              form: product.form,
+                              isPrescription: product.isPrescription
+                            })}
+                            className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors flex-shrink-0"
+                            title="Add to Cart"
+                          >
+                            <ShoppingCart className="w-4 h-4" />
+                          </button>
                         </div>
-                        <button
-                          onClick={() => addItem({
-                            id: product._id.toString(),
-                            name: product.name,
-                            price: product.price,
-                            strength: product.strength,
-                            form: product.form,
-                            isPrescription: product.isPrescription
-                          })}
-                          className="p-2 bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100 transition-colors"
-                          title="Add to Cart"
-                        >
-                          <ShoppingCart className="w-4 h-4" />
-                        </button>
                       </div>
                     ))}
                   </div>
@@ -200,23 +213,78 @@ export default function AIPharmacist() {
             <div ref={messagesEndRef} />
           </div>
 
+          {/* Prescription Input Area */}
+          {showPrescriptionInput && (
+            <div className="px-4 py-2 bg-blue-50 border-t border-blue-200">
+              <div className="flex gap-2 mb-2">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                >
+                  <Upload className="w-4 h-4" />
+                  Upload Prescription
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".txt,.pdf,.png,.jpg,.jpeg"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => setShowPrescriptionInput(false)}
+                  className="px-3 py-1 bg-gray-300 text-gray-700 text-sm rounded hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+              </div>
+              {prescriptionText && (
+                <div className="text-xs bg-white p-2 rounded border border-gray-300 max-h-20 overflow-y-auto">
+                  <strong>Prescription Data:</strong>
+                  <p className="mt-1 text-gray-700">{prescriptionText.substring(0, 100)}...</p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Input */}
           <div className="p-4 border-t border-gray-200 bg-white rounded-b-lg">
+            {errorMessage && (
+              <div className="mb-3 rounded-md border border-red-200 bg-red-50 p-2 text-xs text-red-700">
+                {errorMessage}
+              </div>
+            )}
+            <div className="flex items-center gap-2 mb-2">
+              <button
+                onClick={() => setShowPrescriptionInput(!showPrescriptionInput)}
+                className={`p-2 rounded-md text-sm font-medium transition-colors ${
+                  showPrescriptionInput
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+                title="Upload or paste prescription"
+              >
+                <Upload className="w-4 h-4" />
+              </button>
+              <span className="text-xs text-gray-600">
+                {prescriptionText ? '✓ Prescription attached' : 'Attach prescription'}
+              </span>
+            </div>
             <div className="flex items-center space-x-2">
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type your symptoms..."
-                className="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onKeyDown={handleKeyDown}
+                placeholder="Describe your symptoms..."
+                className="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               />
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || isThinking}
                 className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isThinking ? 'Thinking…' : <Send className="w-5 h-5" />}
+                {isThinking ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Send className="w-5 h-5" />}
               </button>
             </div>
           </div>
