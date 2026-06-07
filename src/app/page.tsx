@@ -64,6 +64,12 @@ export default function Home() {
 
   const featuredProducts = products ? products.filter(p => p.featured).slice(0, 10) : undefined;
   const flashProducts = products ? products.slice(0, 12) : undefined;
+  const bestSellers = products ? products.slice(12, 24) : undefined;
+  const newArrivals = products ? products.slice(24, 36) : undefined;
+  const topRated = products ? products.slice(36, 48) : undefined;
+  const medicines = products ? products.filter(p => p.category?.includes('Medicines') || p.category?.includes('Antibiotics') || p.category?.includes('Pain Relief')).slice(0, 12) : undefined;
+  const vitamins = products ? products.filter(p => p.category?.includes('Vitamins') || p.category?.includes('Supplements')).slice(0, 12) : undefined;
+  const wellness = products ? products.filter(p => p.category?.includes('Health') || p.category?.includes('Medical')).slice(0, 12) : undefined;
 
   return (
     <div className="min-h-screen bg-[#f5f5f5]">
@@ -177,9 +183,101 @@ export default function Home() {
         {/* Just For You */}
         <section className="bg-white rounded-sm p-4 mb-4">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-900">Just For You</h2>
+            <h2 className="text-lg font-bold text-gray-900">Best Sellers</h2>
+            <Link href="/products" className="flex items-center space-x-1 text-[#2563eb] font-medium hover:underline">
+              <span>See All</span>
+              <ChevronRight className="w-4 h-4" />
+            </Link>
           </div>
-          <ProductGrid products={products?.slice(0, 20)} variant="catalog" />
+          <ProductGrid products={bestSellers} variant="catalog" />
+        </section>
+
+        {/* New Arrivals */}
+        <section className="bg-white rounded-sm p-4 mb-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <span className="text-2xl">✨</span>
+              <h2 className="text-lg font-bold text-gray-900">New Arrivals</h2>
+              <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded">New</span>
+            </div>
+            <Link href="/products" className="flex items-center space-x-1 text-[#2563eb] font-medium hover:underline">
+              <span>See All</span>
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+          <ProductGrid products={newArrivals} variant="catalog" />
+        </section>
+
+        {/* Medicines & Treatments */}
+        <section className="bg-white rounded-sm p-4 mb-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <span className="text-2xl">💊</span>
+              <h2 className="text-lg font-bold text-gray-900">Medicines & Treatments</h2>
+            </div>
+            <Link href="/category/medicines" className="flex items-center space-x-1 text-[#2563eb] font-medium hover:underline">
+              <span>See All</span>
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+          <ProductGrid products={medicines} variant="catalog" />
+        </section>
+
+        {/* Vitamins & Supplements */}
+        <section className="bg-white rounded-sm p-4 mb-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <span className="text-2xl">💪</span>
+              <h2 className="text-lg font-bold text-gray-900">Vitamins & Supplements</h2>
+            </div>
+            <Link href="/category/vitamins" className="flex items-center space-x-1 text-[#2563eb] font-medium hover:underline">
+              <span>See All</span>
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+          <ProductGrid products={vitamins} variant="catalog" />
+        </section>
+
+        {/* Health & Medical Devices */}
+        <section className="bg-white rounded-sm p-4 mb-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <span className="text-2xl">🩺</span>
+              <h2 className="text-lg font-bold text-gray-900">Health & Medical Devices</h2>
+            </div>
+            <Link href="/category/medical-devices" className="flex items-center space-x-1 text-[#2563eb] font-medium hover:underline">
+              <span>See All</span>
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+          <ProductGrid products={wellness} variant="catalog" />
+        </section>
+
+        {/* Top Rated */}
+        <section className="bg-white rounded-sm p-4 mb-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <span className="text-2xl">⭐</span>
+              <h2 className="text-lg font-bold text-gray-900">Top Rated</h2>
+            </div>
+            <Link href="/products" className="flex items-center space-x-1 text-[#2563eb] font-medium hover:underline">
+              <span>See All</span>
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+          <ProductGrid products={topRated} variant="catalog" />
+        </section>
+
+        {/* All Products */}
+        <section className="bg-white rounded-sm p-4 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-gray-900">Explore All Products</h2>
+            <Link href="/products" className="flex items-center space-x-1 text-[#2563eb] font-medium hover:underline">
+              <span>See All</span>
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+          <ProductGrid products={products?.slice(48, 60)} variant="catalog" />
         </section>
       </main>
     </div>
