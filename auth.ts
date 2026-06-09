@@ -4,6 +4,19 @@ import Google from "next-auth/providers/google"
 import { inMemoryStore } from './src/lib/in-memory-store'
 import bcrypt from 'bcryptjs'
 
+// Determine the base URL dynamically
+const getBaseUrl = () => {
+  if (process.env.NEXTAUTH_URL) {
+    return process.env.NEXTAUTH_URL;
+  }
+  // For Vercel deployments
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  // For local development
+  return 'http://localhost:3000';
+};
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     Google({
