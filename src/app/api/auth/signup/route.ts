@@ -74,12 +74,24 @@ export async function POST(req: Request) {
       console.warn('Email send failed, but account created:', emailError);
     }
 
-    return NextResponse.json({
+    // Development mode: return verification link for testing
+    const response: any = {
       ok: true,
       id: user.id,
       message: 'Account created. Please verify your email to activate your account.',
       requiresEmailVerification: true,
-    });
+    };
+
+    // Include debug info in development mode
+    if (process.env.NODE_ENV !== 'production') {
+      response.dev = {
+        verificationLink,
+        verificationToken,
+        debugEndpoint: `/api/dev/verify-email?email=${email}`,
+      };
+    }
+
+    return NextResponse.json(response);
   } catch (e) {
     console.error('signup error', e);
     return NextResponse.json(

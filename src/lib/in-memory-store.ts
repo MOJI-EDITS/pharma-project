@@ -1,3 +1,5 @@
+import { persistentUserStore } from './persistent-store';
+
 // Prescription and Medicine recommendation types
 interface PrescriptionItem {
   medicineId: string;
@@ -45,20 +47,22 @@ interface StoredUser {
 }
 
 // In-memory databases
-let users: Map<string, StoredUser> = new Map();
+// Use persistent store for users (survives server restarts)
+// Keep prescriptions in memory for now
 let prescriptions: Map<string, Prescription> = new Map();
 
 export const inMemoryStore = {
   // User operations
   async findUserByEmail(email: string): Promise<StoredUser | null> {
-    const user = Array.from(users.values()).find(
-      (u) => u.email.toLowerCase() === email.toLowerCase()
+    const users = persistentUserStore.getAll();
+    const user = users.find(
+      (u: any) => u.email.toLowerCase() === email.toLowerCase()
     );
     return user || null;
   },
 
   async findUserById(id: string): Promise<StoredUser | null> {
-    return users.get(id) || null;
+    return persistentUserStore.get(id) || null;
   },
 
   async createUser(userData: Omit<StoredUser, 'id' | 'createdAt' | 'updatedAt'>): Promise<StoredUser> {
@@ -71,12 +75,12 @@ export const inMemoryStore = {
       createdAt: now,
       updatedAt: now,
     };
-    users.set(id, user);
+    persistentUserStore.set(id, user);
     return user;
   },
 
   async updateUser(id: string, updates: Partial<StoredUser>): Promise<StoredUser | null> {
-    const user = users.get(id);
+    const user = persistentUserStore.get(id);
     if (!user) return null;
 
     const updated: StoredUser = {
@@ -86,45 +90,47 @@ export const inMemoryStore = {
       createdAt: user.createdAt, // Ensure creation date doesn't change
       updatedAt: Date.now(),
     };
-    users.set(id, updated);
+    persistentUserStore.set(id, updated);
     return updated;
   },
 
   async deleteUser(id: string): Promise<boolean> {
-    return users.delete(id);
+    return persistentUserStore.delete(id);
   },
 
   async findByVerificationToken(token: string): Promise<StoredUser | null> {
-    const user = Array.from(users.values()).find(
-      (u) => u.emailVerificationToken === token && u.emailVerificationTokenExpiry! > Date.now()
+    const users = persistentUserStore.getAll();
+    const user = users.find(
+      (u: any) => u.emailVerificationToken === token && u.emailVerificationTokenExpiry! > Date.now()
     );
     return user || null;
   },
 
   async findByResetToken(token: string): Promise<StoredUser | null> {
-    const user = Array.from(users.values()).find(
-      (u) => u.passwordResetToken === token && u.passwordResetTokenExpiry! > Date.now()
+    const users = persistentUserStore.getAll();
+    const user = users.find(
+      (u: any) => u.passwordResetToken === token && u.passwordResetTokenExpiry! > Date.now()
     );
     return user || null;
   },
 
   // Admin operations
   async getAllUsers(): Promise<StoredUser[]> {
-    return Array.from(users.values());
+    return persistentUserStore.getAll();
   },
 
   async getUserCount(): Promise<number> {
-    return users.size;
+    return persistentUserStore.size();
   },
 
   // Development only: Clear all users
   async clearAllUsers(): Promise<void> {
-    users.clear();
+    persistentUserStore.clear();
   },
 
   // Development only: Get all users data
   getAllUsersData(): StoredUser[] {
-    return Array.from(users.values());
+    return persistentUserStore.getAll();
   },
 
   // Prescription operations
