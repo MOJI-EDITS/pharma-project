@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, AlertCircle, CheckCircle } from 'lucide-react';
+import { validateSignIn } from '@/lib/validation';
 
 export default function SignInPage() {
   const [email, setEmail] = useState('');
@@ -11,12 +12,28 @@ export default function SignInPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError('');
+    setSuccess('');
+    setFieldErrors({});
+    setIsLoading(true);
+
+    // Validate input
+    const validation = validateSignIn({ email, password });
+    if (!validation.valid) {
+      const errors: { [key: string]: string } = {};
+      validation.errors.forEach((err) => {
+        errors[err.field] = err.message;
+      });
+      setFieldErrors(errors);
+      setIsLoading(false);
+      return;
+    }
 
     const result = await signIn('credentials', {
       email,
@@ -25,16 +42,21 @@ export default function SignInPage() {
     });
 
     if (result?.error) {
-      setError('Invalid email or password');
+      setError('Invalid email or password. Please check and try again.');
       setIsLoading(false);
-    } else {
-      router.push('/');
+    } else if (result?.ok) {
+      setSuccess('Signed in successfully! Redirecting...');
+      setTimeout(() => router.push('/'), 1500);
     }
   };
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     await signIn('google', { callbackUrl: '/' });
+  };
+
+  const handleForgotPassword = () => {
+    router.push('/auth/forgot-password');
   };
 
   return (
@@ -50,6 +72,7 @@ export default function SignInPage() {
           <p className="mt-2 text-center text-sm text-gray-600">
             Or{' '}
             <button
+              type="button"
               onClick={() => router.push('/auth/signup')}
               className="font-medium text-[#2563eb] hover:text-[#1d4ed8]"
             >
@@ -60,8 +83,16 @@ export default function SignInPage() {
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
-              {error}
+            <div className="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+              <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+              <div>{error}</div>
+            </div>
+          )}
+
+          {success && (
+            <div className="flex items-start gap-3 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md text-sm">
+              <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+              <div>{success}</div>
             </div>
           )}
 
@@ -80,17 +111,34 @@ export default function SignInPage() {
                   type="email"
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-[#2563eb] focus:border-[#2563eb]"
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setFieldErrors({ ...fieldErrors, email: '' });
+                  }}
+                  className={`appearance-none block w-full pl-10 pr-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-[#2563eb] focus:border-[#2563eb] ${
+                    fieldErrors.email ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="Enter your email"
                 />
               </div>
+              {fieldErrors.email && (
+                <p className="mt-1 text-sm text-red-600">{fieldErrors.email}</p>
+              )}
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
+              <div className="flex justify-between items-center">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  className="text-sm text-[#2563eb] hover:text-[#1d4ed8]"
+                >
+                  Forgot password?
+                </button>
+              </div>
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-gray-400" />
@@ -101,8 +149,13 @@ export default function SignInPage() {
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-[#2563eb] focus:border-[#2563eb]"
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setFieldErrors({ ...fieldErrors, password: '' });
+                  }}
+                  className={`appearance-none block w-full pl-10 pr-10 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-[#2563eb] focus:border-[#2563eb] ${
+                    fieldErrors.password ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="Enter your password"
                 />
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -119,6 +172,9 @@ export default function SignInPage() {
                   </button>
                 </div>
               </div>
+              {fieldErrors.password && (
+                <p className="mt-1 text-sm text-red-600">{fieldErrors.password}</p>
+              )}
             </div>
           </div>
 
@@ -126,7 +182,7 @@ export default function SignInPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#2563eb] hover:bg-[#1d4ed8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2563eb] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#2563eb] hover:bg-[#1d4ed8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2563eb] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
@@ -146,7 +202,7 @@ export default function SignInPage() {
               type="button"
               onClick={handleGoogleSignIn}
               disabled={isLoading}
-              className="w-full flex justify-center items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2563eb] disabled:opacity-50"
+              className="w-full flex justify-center items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2563eb] disabled:opacity-50 transition-colors"
             >
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path
@@ -171,11 +227,8 @@ export default function SignInPage() {
           </div>
         </form>
 
-        <div className="text-center">
-          <p className="text-sm text-gray-600">
-            Demo credentials:{' '}
-            <span className="font-mono text-[#2563eb]">user@example.com / password123</span>
-          </p>
+        <div className="text-center text-sm text-gray-600">
+          <p>Demo credentials: <span className="font-mono text-[#2563eb]">user@example.com</span></p>
         </div>
       </div>
     </div>

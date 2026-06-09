@@ -1,20 +1,10 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import Google from "next-auth/providers/google"
-import { MongoDBAdapter } from "@auth/mongodb-adapter"
-import getClientPromise from './src/lib/mongodb-client'
-import dbConnect from './src/lib/mongodb'
-import { User } from './src/models/User'
+import { inMemoryStore } from './src/lib/in-memory-store'
 import bcrypt from 'bcryptjs'
 
-let adapter: any = undefined;
-const uri = process.env.MONGODB_URI;
-if (uri) {
-  adapter = MongoDBAdapter(() => getClientPromise());
-}
-
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  adapter,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
@@ -34,16 +24,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const email = credentials.email as string;
         const password = credentials.password as string;
 
-        await dbConnect();
-
-        const user = await User.findOne({ email });
+        const user = await inMemoryStore.findUserByEmail(email);
 
         if (!user || !user.password || !bcrypt.compareSync(password, user.password)) {
           return null;
         }
 
         return {
-          id: user._id.toString(),
+          id: user.id,
           email: user.email,
           name: user.name,
           role: user.role,
@@ -54,13 +42,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = user.role;
+        token.role = (user as any).role;
       }
       return token;
     },
     async session({ session, token }) {
       if (session?.user) {
-        session.user.role = token.role as string;
+        (session.user as any).role = token.role as string;
       }
       return session;
     },

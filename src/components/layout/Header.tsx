@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Search, ShoppingCart, User, Menu, X, LogOut, Settings, MapPin, Tag, Truck, Heart, TrendingUp } from 'lucide-react';
 import { useCartStore } from '@/lib/store/cartStore';
+import { useWishlistStore } from '@/lib/store/wishlistStore';
 import { useHydration } from '@/lib/hooks/useHydration';
 import { signOut } from 'next-auth/react';
 import { useAuth } from '@/lib/auth/context';
@@ -16,6 +17,7 @@ export default function Header() {
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const { getItemCount } = useCartStore();
+  const { getItemCount: getWishlistCount } = useWishlistStore();
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const isHydrated = useHydration();
@@ -168,10 +170,33 @@ export default function Header() {
               </button>
               
               {/* Wishlist */}
-              <button className="p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition hidden md:flex items-center space-x-1">
-                <Heart className="w-6 h-6" />
+              <Link 
+                href="/wishlist"
+                className="flex items-center space-x-1 px-3 py-2 text-gray-900 hover:bg-pink-50 rounded-lg transition relative group hidden md:flex"
+              >
+                <div className="relative">
+                  <Heart className="w-6 h-6 text-red-500 hover:text-red-600 transition" />
+                  {isHydrated && getWishlistCount() > 0 && (
+                    <span className="absolute -top-3 -right-3 bg-gradient-to-r from-pink-500 to-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-lg">
+                      {getWishlistCount()}
+                    </span>
+                  )}
+                </div>
                 <span className="text-sm font-medium hidden lg:inline">Wishlist</span>
-              </button>
+                
+                {/* Wishlist Hover Preview */}
+                <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-lg shadow-2xl border border-gray-200 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition p-4 hidden md:block z-50">
+                  <p className="font-semibold text-gray-900 mb-2">❤️ Wishlist</p>
+                  {isHydrated && getWishlistCount() > 0 ? (
+                    <p className="text-sm text-gray-600 mb-3">{getWishlistCount()} items saved</p>
+                  ) : (
+                    <p className="text-sm text-gray-500 mb-3">Your wishlist is empty</p>
+                  )}
+                  <Link href="/wishlist" className="block w-full bg-gradient-to-r from-pink-500 to-red-500 text-white py-2 rounded-lg hover:shadow-lg transition text-center font-medium text-sm">
+                    View Wishlist
+                  </Link>
+                </div>
+              </Link>
 
               {/* Cart */}
               <Link 
@@ -206,7 +231,7 @@ export default function Header() {
               <div className="relative hidden sm:block">
                 <button 
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="flex items-center space-x-1 p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                  className="flex items-center space-x-1 p-2 bg-gray-800 text-white hover:bg-gray-900 rounded-lg transition font-medium"
                 >
                   <User className="w-6 h-6" />
                   <span className="text-sm font-medium hidden lg:inline">Account</span>
@@ -223,26 +248,26 @@ export default function Header() {
                         <div className="py-2">
                           <Link
                             href="/profile"
-                            className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition"
+                            className="flex items-center px-4 py-3 text-sm text-gray-900 bg-gray-50 border-l-2 border-gray-300 hover:border-gray-400 hover:bg-gray-100 transition font-semibold"
                             onClick={() => setIsProfileOpen(false)}
                           >
-                            <Settings className="w-4 h-4 mr-3 text-blue-600" />
+                            <Settings className="w-4 h-4 mr-3 text-gray-600" />
                             <span>My Profile</span>
                           </Link>
                           <Link
                             href="/orders"
-                            className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition"
+                            className="flex items-center px-4 py-3 text-sm text-gray-900 bg-gray-50 border-l-2 border-gray-300 hover:border-gray-400 hover:bg-gray-100 transition font-semibold"
                             onClick={() => setIsProfileOpen(false)}
                           >
-                            <ShoppingCart className="w-4 h-4 mr-3 text-blue-600" />
+                            <ShoppingCart className="w-4 h-4 mr-3 text-gray-600" />
                             <span>My Orders</span>
                           </Link>
                           <Link
                             href="/prescriptions"
-                            className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition"
+                            className="flex items-center px-4 py-3 text-sm text-gray-900 bg-gray-50 border-l-2 border-gray-300 hover:border-gray-400 hover:bg-gray-100 transition font-semibold"
                             onClick={() => setIsProfileOpen(false)}
                           >
-                            <TrendingUp className="w-4 h-4 mr-3 text-blue-600" />
+                            <TrendingUp className="w-4 h-4 mr-3 text-gray-600" />
                             <span>Prescriptions</span>
                           </Link>
                           <button
@@ -263,7 +288,7 @@ export default function Header() {
                           <p className="text-sm text-gray-700 mb-3 font-medium">New to Pharma Plus?</p>
                           <Link
                             href="/auth/signup"
-                            className="block w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2 rounded-lg font-semibold hover:shadow-lg transition text-center text-sm"
+                            className="block w-full bg-gray-800 text-white py-2 rounded-lg font-semibold hover:bg-gray-900 transition text-center text-sm"
                             onClick={() => setIsProfileOpen(false)}
                           >
                             Create Account
@@ -273,7 +298,7 @@ export default function Header() {
                           <p className="text-sm text-gray-600 mb-3 font-medium">Existing Customer?</p>
                           <Link
                             href="/auth/signin"
-                            className="block text-blue-600 font-semibold hover:text-blue-700 transition text-center text-sm"
+                            className="block w-full bg-gray-800 text-white py-2 rounded-lg font-semibold hover:bg-gray-900 transition text-center text-sm"
                             onClick={() => setIsProfileOpen(false)}
                           >
                             Sign In
@@ -335,7 +360,7 @@ export default function Header() {
               <span>Flash Deals</span>
             </Link>
             <Link href="/health-tips" className="text-gray-700 hover:text-blue-600 transition whitespace-nowrap font-medium text-sm">Health Tips</Link>
-            <Link href="/prescriptions" className="text-gray-700 hover:text-blue-600 transition whitespace-nowrap font-medium text-sm">Upload Rx</Link>
+            <Link href="/prescriptions" className="text-white bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 px-3 py-1 rounded-lg transition whitespace-nowrap font-medium text-sm shadow-md hover:shadow-lg">📄 Upload Rx</Link>
           </div>
         </div>
       </div>

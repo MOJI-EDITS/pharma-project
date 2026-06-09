@@ -6,27 +6,21 @@ import Link from 'next/link';
 import { Star, Heart, ShoppingCart, Truck } from 'lucide-react';
 import { productsData } from '@/lib/data/products';
 import { useCartStore } from '@/lib/store/cartStore';
+import { useWishlistStore } from '@/lib/store/wishlistStore';
+import { useToastStore } from '@/lib/store/toastStore';
 import { IProduct } from '@/lib/types/Product';
 
 export default function ProductGrid({ products, variant = 'catalog' }: { products?: IProduct[]; variant?: 'featured' | 'catalog' | 'flash' }) {
-  const [wishlist, setWishlist] = useState<Set<string>>(new Set());
   const { addItem } = useCartStore();
-
-  const toggleWishlist = (e: React.MouseEvent, productId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const newWishlist = new Set(wishlist);
-    if (newWishlist.has(productId)) {
-      newWishlist.delete(productId);
-    } else {
-      newWishlist.add(productId);
-    }
-    setWishlist(newWishlist);
-  };
+  const { toggleWishlist, isInWishlist } = useWishlistStore();
+  const { addToast } = useToastStore();
+  const [addedToCart, setAddedToCart] = useState<string | null>(null);
 
   const handleAddToCart = (e: React.MouseEvent, product: IProduct) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Add to cart
     addItem({
       id: product._id.toString(),
       name: product.name,
@@ -34,6 +28,34 @@ export default function ProductGrid({ products, variant = 'catalog' }: { product
       strength: product.strength,
       form: product.form,
       isPrescription: product.isPrescription
+    });
+
+    // Show toast notification
+    addToast({
+      message: 'Added to cart successfully!',
+      productName: product.name,
+      type: 'success',
+      duration: 3000,
+    });
+
+    // Show button animation
+    setAddedToCart(product._id.toString());
+    setTimeout(() => setAddedToCart(null), 2000);
+  };
+
+  const toggleItemWishlist = (e: React.MouseEvent, product: IProduct) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleWishlist({
+      id: product._id.toString(),
+      name: product.name,
+      price: product.price,
+      image: product.images?.[0],
+      strength: product.strength,
+      form: product.form,
+      genericName: product.genericName,
+      rating: product.rating,
+      category: product.category,
     });
   };
 
@@ -85,16 +107,30 @@ export default function ProductGrid({ products, variant = 'catalog' }: { product
             
             {/* Wishlist */}
             <button
-              onClick={(e) => toggleWishlist(e, product._id.toString())}
-              className="absolute bottom-2 right-2 p-1.5 bg-white rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500"
+              onClick={(e) => toggleItemWishlist(e, product)}
+              className="absolute bottom-2 right-2 p-1.5 bg-white rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 active:scale-95"
+              title={isInWishlist(product._id.toString()) ? 'Remove from wishlist' : 'Add to wishlist'}
             >
               <Heart
-                className={`w-4 h-4 ${
-                  wishlist.has(product._id.toString())
+                className={`w-4 h-4 transition-all ${
+                  isInWishlist(product._id.toString())
                     ? 'text-red-500 fill-current'
-                    : 'text-gray-500'
+                    : 'text-gray-400 hover:text-red-500'
                 }`}
               />
+            </button>
+
+            {/* Add to Cart Button - Visible on hover with animation */}
+            <button
+              onClick={(e) => handleAddToCart(e, product)}
+              className={`absolute bottom-2 left-2 p-1.5 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all hover:scale-110 active:scale-95 ${
+                addedToCart === product._id.toString()
+                  ? 'bg-green-500 text-white animate-bounce'
+                  : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-lg'
+              }`}
+              title="Add to cart"
+            >
+              <ShoppingCart className="w-4 h-4" />
             </button>
           </div>
 

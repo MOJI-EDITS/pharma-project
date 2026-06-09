@@ -1,239 +1,305 @@
-"use client";
+'use client';
 
-import { useMemo, useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Clock, Download, AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 
-interface UploadFile {
-  name: string;
-  size: number;
-  type: string;
+interface PrescriptionItem {
+  medicineId: string;
+  medicineName: string;
+  strength: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  quantity: number;
+  notes?: string;
 }
 
-const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
+interface Prescription {
+  id: string;
+  userId: string;
+  symptoms: string[];
+  medicines: PrescriptionItem[];
+  doctorNotes?: string;
+  aiRecommended: boolean;
+  status: 'active' | 'completed' | 'cancelled';
+  createdAt: number;
+  expiryDate?: number;
+  refillsRemaining: number;
+}
 
-export default function Prescriptions() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [notes, setNotes] = useState('');
-  const [files, setFiles] = useState<File[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
+export default function PrescriptionsPage() {
+  const { data: session, status } = useSession();
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'all' | 'active' | 'completed' | 'cancelled'>('all');
 
-  const fileList = useMemo(() => files.map((file) => ({ name: file.name, size: file.size, type: file.type })), [files]);
-
-  const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = event.target.files;
-    if (!selectedFiles) return;
-    setErrorMessage('');
-    setFiles(Array.from(selectedFiles));
-  };
-
-  const onDrop = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    const dropped = Array.from(event.dataTransfer.files);
-    setErrorMessage('');
-    setFiles(dropped);
-  };
-
-  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setErrorMessage('');
-    setSuccessMessage('');
-
-    if (!name || !email || !phone || !address) {
-      setErrorMessage('Please complete all required fields before uploading.');
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      window.location.href = '/auth/signin';
       return;
     }
 
-    if (!files.length) {
-      setErrorMessage('Please attach at least one prescription file.');
-      return;
+    if (status === 'authenticated') {
+      fetchPrescriptions();
     }
+  }, [status]);
 
-    const invalidFile = files.find((file) => !ACCEPTED_TYPES.includes(file.type));
-    if (invalidFile) {
-      setErrorMessage('Only JPG, PNG, and PDF files are allowed.');
-      return;
-    }
-
-    setLoading(true);
-
+  const fetchPrescriptions = async () => {
     try {
-      const formData = new FormData();
-      formData.append('name', name);
-      formData.append('email', email);
-      formData.append('phone', phone);
-      formData.append('address', address);
-      formData.append('notes', notes);
-      files.forEach((file) => formData.append('files', file));
+      setLoading(true);
+      const response = await fetch('/api/prescriptions');
+      const data = await response.json();
 
-      const response = await fetch('/api/prescriptions', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const result = await response.json();
-      if (!response.ok) {
-        setErrorMessage(result?.error || 'Upload failed. Please try again.');
+      if (response.ok) {
+        setPrescriptions(data.prescriptions || []);
       } else {
-        setSuccessMessage(result.message || 'Prescription uploaded successfully.');
-        setFiles([]);
-        setName('');
-        setEmail('');
-        setPhone('');
-        setAddress('');
-        setNotes('');
+        setError(data.error || 'Failed to fetch prescriptions');
       }
-    } catch (error) {
-      setErrorMessage('Upload failed. Please check your connection and try again.');
+    } catch (err) {
+      setError('Error fetching prescriptions');
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 py-12">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Prescription Upload</h1>
-            <p className="mt-3 text-gray-600">
-              Upload your prescription and our team will verify it before dispatching your medication. You can upload JPG, PNG, or PDF files.
-            </p>
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const isExpired = (expiryDate?: number) => {
+    return expiryDate && expiryDate < Date.now();
+  };
+
+  const filteredPrescriptions = prescriptions.filter(rx => {
+    if (filter === 'all') return true;
+    return rx.status === filter;
+  });
+
+  const statusIcon = (status: string) => {
+    switch (status) {
+      case 'active':
+        return <CheckCircle2 className="w-5 h-5 text-green-600" />;
+      case 'completed':
+        return <CheckCircle2 className="w-5 h-5 text-blue-600" />;
+      case 'cancelled':
+        return <XCircle className="w-5 h-5 text-red-600" />;
+      default:
+        return null;
+    }
+  };
+
+  if (status === 'loading' || loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="animate-pulse space-y-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-32 bg-gray-200 rounded-lg" />
+            ))}
           </div>
+        </div>
+      </div>
+    );
+  }
 
-          {successMessage ? (
-            <div className="rounded-2xl border border-green-200 bg-green-50 p-5 text-green-900 mb-6">
-              {successMessage}
-            </div>
-          ) : null}
+  if (status === 'unauthenticated') {
+    return null;
+  }
 
-          {errorMessage ? (
-            <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-900 mb-6">
-              {errorMessage}
-            </div>
-          ) : null}
+  return (
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">💊 My Prescriptions</h1>
+          <p className="text-lg text-gray-600">Manage and view your prescription history</p>
+        </div>
 
-          <form className="space-y-6" onSubmit={onSubmit}>
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Full Name</label>
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  type="text"
-                  placeholder="Your full name"
-                  className="mt-1 block w-full rounded-xl border border-gray-300 bg-white px-4 py-3 shadow-sm focus:border-[#2563eb] focus:outline-none focus:ring-2 focus:ring-[#dbeafe]"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Email Address</label>
-                <input
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  type="email"
-                  placeholder="you@example.com"
-                  className="mt-1 block w-full rounded-xl border border-gray-300 bg-white px-4 py-3 shadow-sm focus:border-[#2563eb] focus:outline-none focus:ring-2 focus:ring-[#dbeafe]"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Phone Number</label>
-                <input
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  type="tel"
-                  placeholder="+1 234 567 890"
-                  className="mt-1 block w-full rounded-xl border border-gray-300 bg-white px-4 py-3 shadow-sm focus:border-[#2563eb] focus:outline-none focus:ring-2 focus:ring-[#dbeafe]"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Delivery Address</label>
-                <input
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  type="text"
-                  placeholder="Street, city, state, postal code"
-                  className="mt-1 block w-full rounded-xl border border-gray-300 bg-white px-4 py-3 shadow-sm focus:border-[#2563eb] focus:outline-none focus:ring-2 focus:ring-[#dbeafe]"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Prescription Notes (optional)</label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={4}
-                placeholder="Any special instructions for our pharmacy team"
-                className="mt-1 block w-full rounded-xl border border-gray-300 bg-white px-4 py-3 shadow-sm focus:border-[#2563eb] focus:outline-none focus:ring-2 focus:ring-[#dbeafe]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Upload Prescription</label>
-              <div
-                onDrop={onDrop}
-                onDragOver={(event) => event.preventDefault()}
-                className="mt-2 flex min-h-[180px] flex-col items-center justify-center rounded-3xl border-2 border-dashed border-gray-300 bg-slate-50 px-4 py-10 text-center transition hover:border-[#2563eb] hover:bg-slate-100"
-              >
-                <p className="text-sm text-gray-600">Drag and drop your prescription file(s) here, or click to browse.</p>
-                <p className="text-sm text-gray-400 mt-1">Allowed formats: JPG, PNG, PDF</p>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,application/pdf"
-                  multiple
-                  onChange={onFileChange}
-                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                />
-              </div>
-              {fileList.length > 0 ? (
-                <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-4">
-                  <p className="text-sm font-semibold text-gray-900">Files ready to upload</p>
-                  <ul className="mt-3 space-y-2 text-sm text-gray-700">
-                    {fileList.map((file) => (
-                      <li key={`${file.name}-${file.size}`}>
-                        {file.name} • {(file.size / 1024).toFixed(1)} KB • {file.type}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-            </div>
-
+        {/* Navigation */}
+        <div className="mb-6 flex gap-2 flex-wrap">
+          {(['all', 'active', 'completed', 'cancelled'] as const).map(f => (
             <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-xl bg-[#2563eb] px-6 py-4 text-base font-semibold text-white shadow-lg shadow-[#2563eb]/10 transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-70"
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                filter === f
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:border-blue-400'
+              }`}
             >
-              {loading ? 'Uploading prescription…' : 'Submit Prescription'}
+              {f === 'all' && `All (${prescriptions.length})`}
+              {f === 'active' && `Active (${prescriptions.filter(r => r.status === 'active').length})`}
+              {f === 'completed' && `Completed (${prescriptions.filter(r => r.status === 'completed').length})`}
+              {f === 'cancelled' && `Cancelled (${prescriptions.filter(r => r.status === 'cancelled').length})`}
             </button>
-          </form>
+          ))}
+        </div>
 
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <p className="text-sm text-gray-500">Already uploaded a prescription?</p>
-            <Link
-              href="/prescriptions/history"
-              className="rounded-full bg-[#2563eb] px-4 py-2 text-sm font-medium text-white hover:bg-[#1d4ed8]"
-            >
-              View Upload History
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <h3 className="font-semibold text-red-900">Error</h3>
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {filteredPrescriptions.length === 0 && (
+          <div className="bg-white rounded-lg shadow p-12 text-center">
+            <Clock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Prescriptions Found</h3>
+            <p className="text-gray-600 mb-6">
+              {filter === 'all'
+                ? 'You have no prescriptions yet. Use the AI Pharmacist to get medicine recommendations based on your symptoms.'
+                : `You have no ${filter} prescriptions.`}
+            </p>
+            <Link href="/" className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+              Get Medicine Recommendations
             </Link>
           </div>
+        )}
 
-          <div className="mt-8 rounded-3xl border border-gray-200 bg-[#f8fafc] p-6">
-            <h2 className="text-xl font-semibold text-gray-900">How it works</h2>
-            <ul className="mt-4 space-y-3 text-sm text-gray-600">
-              <li>1. Upload a clear image or PDF of your prescription.</li>
-              <li>2. Our pharmacists verify your prescription.</li>
-              <li>3. We prepare your medication and deliver to your address.</li>
-            </ul>
-          </div>
+        {/* Prescriptions List */}
+        <div className="space-y-6">
+          {filteredPrescriptions.map(prescription => (
+            <div key={prescription.id} className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow overflow-hidden">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-blue-200 flex justify-between items-start">
+                <div className="flex items-start gap-3">
+                  {statusIcon(prescription.status)}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Prescription #{prescription.id.slice(-6).toUpperCase()}
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      {formatDate(prescription.createdAt)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2 flex-wrap justify-end">
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    prescription.status === 'active'
+                      ? 'bg-green-100 text-green-800'
+                      : prescription.status === 'completed'
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {prescription.status === 'active' ? '✓ Active' : prescription.status === 'completed' ? '✓ Completed' : '✗ Cancelled'}
+                  </span>
+                  {prescription.aiRecommended && (
+                    <span className="px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                      🤖 AI Recommended
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="px-6 py-4">
+                {/* Symptoms */}
+                {prescription.symptoms.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="font-semibold text-gray-900 mb-2">Reported Symptoms:</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {prescription.symptoms.map((symptom, idx) => (
+                        <span key={idx} className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm">
+                          {symptom}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Medicines */}
+                <div className="mb-4">
+                  <h4 className="font-semibold text-gray-900 mb-3">Prescribed Medicines ({prescription.medicines.length})</h4>
+                  <div className="space-y-3">
+                    {prescription.medicines.map((medicine, idx) => (
+                      <div key={idx} className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <p className="font-semibold text-gray-900">{medicine.medicineName}</p>
+                            <p className="text-sm text-gray-600">{medicine.strength}</p>
+                          </div>
+                          <p className="font-bold text-green-600">Qty: {medicine.quantity}</p>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <p className="text-gray-600">Dosage</p>
+                            <p className="font-medium text-gray-900">{medicine.dosage}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600">Frequency</p>
+                            <p className="font-medium text-gray-900">{medicine.frequency}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600">Duration</p>
+                            <p className="font-medium text-gray-900">{medicine.duration}</p>
+                          </div>
+                        </div>
+                        {medicine.notes && (
+                          <p className="text-sm text-gray-600 mt-2 pt-2 border-t border-green-200">
+                            <strong>Notes:</strong> {medicine.notes}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Doctor Notes */}
+                {prescription.doctorNotes && (
+                  <div className="mb-4">
+                    <h4 className="font-semibold text-gray-900 mb-2">Doctor Notes:</h4>
+                    <p className="text-gray-700 bg-yellow-50 p-3 rounded border border-yellow-200">
+                      {prescription.doctorNotes}
+                    </p>
+                  </div>
+                )}
+
+                {/* Metadata */}
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  {prescription.expiryDate && (
+                    <div>
+                      <p className="text-gray-600">Expiry Date</p>
+                      <p className={`font-medium ${isExpired(prescription.expiryDate) ? 'text-red-600' : 'text-gray-900'}`}>
+                        {formatDate(prescription.expiryDate)}
+                        {isExpired(prescription.expiryDate) && ' (Expired)'}
+                      </p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-gray-600">Refills Remaining</p>
+                    <p className="font-medium text-gray-900">{prescription.refillsRemaining}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="bg-gray-50 px-6 py-4 flex justify-between items-center border-t border-gray-200">
+                <p className="text-xs text-gray-600">
+                  ID: {prescription.id}
+                </p>
+                <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+                  <Download className="w-4 h-4" />
+                  Download Prescription
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

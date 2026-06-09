@@ -1,24 +1,36 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { X, Send, Bot, ShoppingCart, Upload } from 'lucide-react';
+import { X, Send, Bot, ShoppingCart, Upload, Pill } from 'lucide-react';
 import { useCartStore } from '@/lib/store/cartStore';
 import { IProduct } from '@/lib/types/Product';
+import { MedicineInfo } from '@/lib/medicines-database';
+import SymptomInput from './SymptomInput';
 
 interface Message {
   id: string;
   text: string;
   sender: 'user' | 'ai';
   products?: IProduct[];
+  medicines?: MedicineInfo[];
+  recommendations?: Array<{medicine: MedicineInfo; matchScore: number; reasoning: string; precautions: string[]}>;
+}
+
+interface DetailedRecommendation {
+  medicine: MedicineInfo;
+  matchScore: number;
+  reasoning: string;
+  precautions: string[];
 }
 
 export default function AIPharmacist() {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
+  const [mode, setMode] = useState<'chat' | 'symptoms'>('chat');
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: "Hello! I'm your AI Pharmacist. Upload a prescription or describe your symptoms, and I'll recommend suitable products from our pharmacy.",
+      text: "Hello! I'm your AI Pharmacist. You can ask me about medicines, upload a prescription, or describe your symptoms for AI-powered medicine recommendations.",
       sender: 'ai',
     },
   ]);
@@ -108,6 +120,59 @@ export default function AIPharmacist() {
     }
   };
 
+  const handleSymptomRecommendation = async (symptoms: string[], severity: 'mild' | 'moderate' | 'severe', duration: string) => {
+    setIsThinking(true);
+    setErrorMessage(null);
+    setMode('chat');
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      text: `Symptoms: ${symptoms.join(', ')} (${severity}, ${duration})`,
+      sender: 'user',
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+
+    try {
+      const response = await fetch('/api/recommendations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          symptoms,
+          severity,
+          duration,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.recommendations) {
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: data.response,
+          sender: 'ai',
+          recommendations: data.recommendations,
+        };
+        setMessages(prev => [...prev, aiMessage]);
+      } else {
+        throw new Error(data.error || 'Failed to get recommendations');
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'AI service unavailable';
+      setErrorMessage(errorMsg);
+
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: "I'm unable to process your symptoms at the moment. Please try again later or consult a healthcare professional.",
+        sender: 'ai',
+      };
+
+      setMessages(prev => [...prev, aiMessage]);
+    } finally {
+      setIsThinking(false);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -141,7 +206,8 @@ export default function AIPharmacist() {
             </button>
           </div>
 
-          {/* Messages */}
+          {/* Messages - Chat Mode */}
+          {mode === 'chat' && (
           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
             {messages.map((msg) => (
               <div
@@ -208,13 +274,104 @@ export default function AIPharmacist() {
                     ))}
                   </div>
                 )}
+
+                {/* Medicine Recommendations */}
+                {msg.recommendations && msg.recommendations.length > 0 && (
+                  <div className="mt-3 space-y-2 w-full max-w-[95%]">
+                    <p className="text-xs font-semibold text-gray-600 px-2">🔬 AI-Recommended Medicines:</p>
+                    {msg.recommendations.slice(0, 3).map((rec, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-gradient-to-r from-green-50 to-emerald-50 p-3 rounded-lg border border-green-200 shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="font-semibold text-sm text-gray-900">{rec.medicine.name}</p>
+                              <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                                {rec.matchScore.toFixed(0)}% Match
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-600 mb-1">{rec.medicine.genericName}</p>
+                            <p className="text-xs text-gray-700 mb-2 font-medium">{rec.reasoning}</p>
+                            <div className="flex gap-2 mb-2 text-xs">
+                              <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">
+                                {rec.medicine.strength}
+                              </span>
+                              <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
+                                {rec.medicine.form}
+                              </span>
+                            </div>
+                            <p className="font-bold text-green-600">Rs{rec.medicine.price}</p>
+                            {rec.medicine.isPrescriptionOnly && (
+                              <p className="text-xs text-red-600 mt-1">⚠️ Prescription Required</p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => addItem({
+                              id: rec.medicine.id,
+                              name: rec.medicine.name,
+                              price: rec.medicine.price,
+                              strength: rec.medicine.strength,
+                              form: rec.medicine.form,
+                              isPrescription: rec.medicine.isPrescriptionOnly
+                            })}
+                            className="p-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors flex-shrink-0"
+                            title="Add to Cart"
+                          >
+                            <ShoppingCart className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
             <div ref={messagesEndRef} />
           </div>
+          )}
+
+          {/* Symptom Input Mode */}
+          {mode === 'symptoms' && !isThinking && (
+            <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+              <SymptomInput onSubmit={handleSymptomRecommendation} isLoading={isThinking} />
+              <button
+                onClick={() => setMode('chat')}
+                className="mt-4 w-full px-3 py-2 bg-gray-400 text-white text-sm rounded hover:bg-gray-500 transition-colors"
+              >
+                Back to Chat
+              </button>
+            </div>
+          )}
+
+          {/* Mode Tabs */}
+          <div className="px-4 py-2 bg-white border-b border-gray-200 flex gap-2">
+            <button
+              onClick={() => setMode('chat')}
+              className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${
+                mode === 'chat'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              💬 Chat
+            </button>
+            <button
+              onClick={() => setMode('symptoms')}
+              className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${
+                mode === 'symptoms'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <Pill className="w-4 h-4 inline mr-1" />
+              Symptoms
+            </button>
+          </div>
 
           {/* Prescription Input Area */}
-          {showPrescriptionInput && (
+          {showPrescriptionInput && mode === 'chat' && (
             <div className="px-4 py-2 bg-blue-50 border-t border-blue-200">
               <div className="flex gap-2 mb-2">
                 <button
@@ -247,7 +404,8 @@ export default function AIPharmacist() {
             </div>
           )}
 
-          {/* Input */}
+          {/* Input - Chat Mode Only */}
+          {mode === 'chat' && (
           <div className="p-4 border-t border-gray-200 bg-white rounded-b-lg">
             {errorMessage && (
               <div className="mb-3 rounded-md border border-red-200 bg-red-50 p-2 text-xs text-red-700">
@@ -288,6 +446,7 @@ export default function AIPharmacist() {
               </button>
             </div>
           </div>
+          )}
         </div>
       )}
     </>
