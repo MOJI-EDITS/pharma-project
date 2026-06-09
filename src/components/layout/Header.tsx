@@ -192,9 +192,9 @@ export default function Header() {
                   ) : (
                     <p className="text-sm text-gray-500 mb-3">Your wishlist is empty</p>
                   )}
-                  <Link href="/wishlist" className="block w-full bg-gradient-to-r from-pink-500 to-red-500 text-white py-2 rounded-lg hover:shadow-lg transition text-center font-medium text-sm">
+                  <button onClick={() => router.push('/wishlist')} className="block w-full bg-gradient-to-r from-pink-500 to-red-500 text-white py-2 rounded-lg hover:shadow-lg transition text-center font-medium text-sm">
                     View Wishlist
-                  </Link>
+                  </button>
                 </div>
               </Link>
 
@@ -221,9 +221,9 @@ export default function Header() {
                   ) : (
                     <p className="text-sm text-gray-500 mb-3">Your cart is empty</p>
                   )}
-                  <Link href="/cart" className="block w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition text-center font-medium text-sm">
+                  <button onClick={() => router.push('/cart')} className="block w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition text-center font-medium text-sm">
                     View Cart
-                  </Link>
+                  </button>
                 </div>
               </Link>
 
