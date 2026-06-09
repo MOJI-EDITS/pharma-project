@@ -40,15 +40,57 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async signIn({ user, account, profile }) {
+      // Handle Google OAuth sign-in
+      if (account?.provider === 'google' && profile?.email) {
+        try {
+          // Check if user exists
+          let existingUser = await inMemoryStore.findUserByEmail(profile.email);
+          
+          if (!existingUser) {
+            // Create new user from Google profile
+            existingUser = await inMemoryStore.createUser({
+              email: profile.email,
+              name: profile.name || '',
+              emailVerified: true, // Google emails are pre-verified
+              role: 'user',
+              accountStatus: 'active',
+            });
+          }
+          
+          // Attach user ID to the user object for session
+          (user as any).id = existingUser.id;
+          (user as any).role = existingUser.role;
+          
+          return true;
+        } catch (error) {
+          console.error('Google sign-in error:', error);
+          return false;
+        }
+      }
+      
+      return true;
+    },
+    async redirect({ url, baseUrl }) {
+      // Allow callback URLs
+      if (url.startsWith('/')) return `${baseUrl}${url}`;
+      // Allow same origin URLs
+      else if (new URL(url).origin === baseUrl) return url;
+      
+      // Default redirect to complete-profile for OAuth users
+      return `${baseUrl}/auth/complete-profile`;
+    },
+    async jwt({ token, user, account }) {
       if (user) {
         token.role = (user as any).role;
+        token.id = (user as any).id;
       }
       return token;
     },
     async session({ session, token }) {
       if (session?.user) {
         (session.user as any).role = token.role as string;
+        (session.user as any).id = token.id;
       }
       return session;
     },
