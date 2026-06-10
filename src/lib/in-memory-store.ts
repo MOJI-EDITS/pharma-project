@@ -147,11 +147,12 @@ export const inMemoryStore = {
     prescriptions.set(id, prescription);
 
     // Add prescription ID to user's history
-    const user = users.get(userId);
+    const user = persistentUserStore.get(userId);
     if (user) {
       user.prescriptionHistory = user.prescriptionHistory || [];
       user.prescriptionHistory.push(id);
       user.updatedAt = Date.now();
+      persistentUserStore.set(userId, user);
     }
 
     return prescription;
@@ -162,7 +163,7 @@ export const inMemoryStore = {
   },
 
   async getUserPrescriptions(userId: string): Promise<Prescription[]> {
-    const user = users.get(userId);
+    const user = persistentUserStore.get(userId);
     if (!user || !user.prescriptionHistory) return [];
     
     return user.prescriptionHistory
