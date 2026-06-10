@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { AlertCircle, CheckCircle, User, Mail, Phone, MapPin } from 'lucide-react';
 
-export default function CompleteProfilePage() {
+function CompleteProfileForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
@@ -216,5 +216,26 @@ export default function CompleteProfilePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Loading fallback
+function FormSkeleton() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div className="h-32 bg-gray-200 rounded animate-pulse"></div>
+        <div className="h-64 bg-gray-200 rounded animate-pulse"></div>
+      </div>
+    </div>
+  );
+}
+
+// Export the page component wrapped in Suspense
+export default function CompleteProfilePage() {
+  return (
+    <Suspense fallback={<FormSkeleton />}>
+      <CompleteProfileForm />
+    </Suspense>
   );
 }
