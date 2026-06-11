@@ -7,7 +7,7 @@ export async function GET() {
   try {
     await dbConnect();
     const email = 'user@example.com';
-    const existing = await User.findOne({ email }).lean().exec();
+    const existing = await User.findOne({ email }).lean().exec() as any;
     if (existing) {
       return NextResponse.json({ ok: true, message: 'Demo user already exists', userId: existing._id });
     }

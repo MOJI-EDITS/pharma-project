@@ -167,8 +167,8 @@ export const inMemoryStore = {
     if (!user || !user.prescriptionHistory) return [];
     
     return user.prescriptionHistory
-      .map(rxId => prescriptions.get(rxId))
-      .filter((rx): rx is Prescription => rx !== undefined);
+      .map((rxId: string) => prescriptions.get(rxId))
+      .filter((rx: Prescription | undefined): rx is Prescription => rx !== undefined);
   },
 
   async updatePrescription(id: string, updates: Partial<Prescription>): Promise<Prescription | null> {

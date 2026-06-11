@@ -82,10 +82,10 @@ export default function ProfilePage() {
   useEffect(() => {
     if (session?.user) {
       setFormData({
-        name: session.user.name || '',
-        email: session.user.email || '',
-        phone: (session.user as any).phone || '',
-        address: (session.user as any).address || '',
+        name: session.user?.name || '',
+        email: session.user?.email || '',
+        phone: (session.user as any)?.phone || '',
+        address: (session.user as any)?.address || '',
       });
     }
   }, [session]);
@@ -193,9 +193,9 @@ export default function ProfilePage() {
                 <User className="h-8 w-8 text-[#2563eb]" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white">{session.user.name}</h2>
-                <p className="text-blue-100">{session.user.email}</p>
-                {(session.user as any).role === 'admin' && (
+                <h2 className="text-2xl font-bold text-white">{session.user?.name}</h2>
+                <p className="text-blue-100">{session.user?.email}</p>
+                {(session.user as any)?.role === 'admin' && (
                   <span className="inline-block mt-2 px-3 py-1 bg-yellow-400 text-yellow-900 text-xs font-semibold rounded-full">
                     Admin
                   </span>
@@ -221,7 +221,7 @@ export default function ProfilePage() {
                     </label>
                     <p className="text-gray-900 text-lg flex items-center gap-2">
                       {formData.email}
-                      {session.user.email && (
+                      {session.user?.email && (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           ✓ Verified
                         </span>
@@ -367,7 +367,7 @@ export default function ProfilePage() {
           <h3 className="font-semibold text-blue-900 mb-3">Account Information</h3>
           <ul className="space-y-2 text-sm text-blue-800">
             <li>• Account status: <span className="font-semibold text-green-600">Active</span></li>
-            <li>• Role: <span className="font-semibold capitalize">{(session.user as any).role || 'User'}</span></li>
+            <li>• Role: <span className="font-semibold capitalize">{(session.user as any)?.role || 'User'}</span></li>
           </ul>
         </div>
 

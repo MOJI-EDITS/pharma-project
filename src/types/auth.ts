@@ -1,31 +1,20 @@
 // Extended session types for NextAuth
-import type { DefaultSession, DefaultUser } from 'next-auth';
+import type { DefaultSession } from 'next-auth';
 
 declare module 'next-auth' {
-  interface User extends DefaultUser {
-    id: string;
-    email: string;
-    name: string;
-    role: 'user' | 'admin';
-    emailVerified: boolean;
+  interface User {
+    role?: 'user' | 'admin';
+    emailVerified?: boolean;
     phone?: string;
     address?: string;
     lastLogin?: Date;
-    accountStatus: 'active' | 'suspended' | 'deleted';
+    accountStatus?: 'active' | 'suspended' | 'deleted';
   }
 
-  interface Session {
-    user?: User & DefaultSession['user'];
+  interface Session extends DefaultSession {
+    // Session already has user from DefaultSession
   }
 
-  interface JWT {
-    role?: 'user' | 'admin';
-    email?: string;
-    emailVerified?: boolean;
-  }
-}
-
-declare module 'next-auth/jwt' {
   interface JWT {
     role?: 'user' | 'admin';
     email?: string;

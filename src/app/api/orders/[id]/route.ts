@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import OrderModel from '@/models/Order';
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const orderId = params.id;
+    const { id } = await params;
+    const orderId = id;
     if (!orderId) {
       return NextResponse.json({ error: 'Missing order ID' }, { status: 400 });
     }
@@ -16,7 +17,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     }
 
     await dbConnect();
-    const order = await OrderModel.findById(orderId).lean().exec();
+    const order = await OrderModel.findById(orderId).lean().exec() as any;
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }

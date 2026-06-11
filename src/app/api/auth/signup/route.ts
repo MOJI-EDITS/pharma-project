@@ -60,6 +60,7 @@ export async function POST(req: Request) {
       emailVerified: false,
       role: 'user',
       accountStatus: 'active',
+      prescriptionHistory: [],
     });
 
     // Send verification email

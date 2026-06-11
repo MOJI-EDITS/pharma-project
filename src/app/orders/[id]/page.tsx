@@ -55,7 +55,7 @@ export default function OrderDetailPage() {
 
     async function fetchOrder() {
       try {
-        const response = await fetch(`/api/orders/${encodeURIComponent(orderId)}`);
+        const response = await fetch(`/api/orders/${encodeURIComponent(orderId as string)}`);
         const data = await response.json();
         if (!response.ok) {
           setError(data?.error || 'Unable to load order details.');
@@ -73,7 +73,7 @@ export default function OrderDetailPage() {
   }, [orderId]);
 
   return (
-    <InfoPage title="Order Details" maxWidth="4xl">
+    <InfoPage title="Order Details" maxWidth="xl">
       <div className="space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>

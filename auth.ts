@@ -29,7 +29,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
@@ -48,6 +48,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           email: user.email,
           name: user.name,
           role: user.role,
+          emailVerified: user.emailVerified,
+          accountStatus: user.accountStatus,
         };
       },
     }),
@@ -65,9 +67,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             existingUser = await inMemoryStore.createUser({
               email: profile.email,
               name: profile.name || '',
+              password: '', // OAuth users don't have a password
               emailVerified: true, // Google emails are pre-verified
               role: 'user',
               accountStatus: 'active',
+              prescriptionHistory: [],
             });
           }
           

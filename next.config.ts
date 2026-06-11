@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'export',
+  // For mobile app: remove static export to allow dynamic API routes
+  // output: 'export',  // DISABLED for API routes support
   images: {
     unoptimized: true,
     remotePatterns: [
