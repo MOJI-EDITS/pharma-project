@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Pharma Plus</string>
+    <string name="title_activity_main">Pharma Plus</string>
+    <string name="package_name">com.futuretech.pharmaplus</string>
+    <string name="custom_url_scheme">com.futuretech.pharmaplus</string>
+</resources>

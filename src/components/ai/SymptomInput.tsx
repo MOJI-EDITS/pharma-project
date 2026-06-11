@@ -1,12 +1,23 @@
 'use client';
 
 import React, { useState } from 'react';
-import { AlertCircle, X, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, X, CheckCircle2, MapPin } from 'lucide-react';
 
 interface SymptomInputProps {
-  onSubmit: (symptoms: string[], severity: 'mild' | 'moderate' | 'severe', duration: string) => void;
+  onSubmit: (symptoms: string[], severity: 'mild' | 'moderate' | 'severe', duration: string, city?: string) => void;
   isLoading?: boolean;
 }
+
+const citiesWithDoctors = [
+  'Lahore',
+  'Karachi',
+  'Islamabad',
+  'Rawalpindi',
+  'Peshawar',
+  'Quetta',
+  'Multan',
+  'Faisalabad',
+];
 
 const commonSymptoms = [
   'Headache',
@@ -33,6 +44,7 @@ export default function SymptomInput({ onSubmit, isLoading }: SymptomInputProps)
   const [customSymptom, setCustomSymptom] = useState('');
   const [severity, setSeverity] = useState<'mild' | 'moderate' | 'severe'>('mild');
   const [duration, setDuration] = useState('1-2 days');
+  const [selectedCity, setSelectedCity] = useState<string>('Lahore');
   const [errors, setErrors] = useState<string[]>([]);
   const [showValidation, setShowValidation] = useState(false);
 
@@ -80,7 +92,7 @@ export default function SymptomInput({ onSubmit, isLoading }: SymptomInputProps)
     }
 
     setShowValidation(false);
-    onSubmit(selectedSymptoms, severity, duration);
+    onSubmit(selectedSymptoms, severity, duration, selectedCity);
   };
 
   return (
@@ -157,6 +169,26 @@ export default function SymptomInput({ onSubmit, isLoading }: SymptomInputProps)
           </div>
         </div>
       )}
+
+      {/* Location Filter */}
+      <div className="mb-6">
+        <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+          <MapPin className="w-4 h-4" />
+          Select Your City in Pakistan (For Doctor Recommendations)
+        </label>
+        <select
+          value={selectedCity}
+          onChange={e => setSelectedCity(e.target.value)}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+        >
+          {citiesWithDoctors.map(city => (
+            <option key={city} value={city}>
+              {city}
+            </option>
+          ))}
+        </select>
+        <p className="text-xs text-gray-500 mt-2">We'll recommend doctors from your selected city in Pakistan</p>
+      </div>
 
       {/* Severity Selection */}
       <div className="mb-6">

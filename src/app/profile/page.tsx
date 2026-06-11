@@ -3,7 +3,59 @@
 import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { User, Mail, Phone, MapPin, LogOut, AlertCircle, CheckCircle } from 'lucide-react';
+import { User, Mail, Phone, MapPin, LogOut, AlertCircle, CheckCircle, Package, Truck, MapPin as Location, X } from 'lucide-react';
+
+// Fake orders data
+const FAKE_ORDERS = [
+  {
+    id: 'ORD-2025001',
+    date: '2025-12-01',
+    items: ['Aspirin', 'Vitamin C', 'Cough Syrup'],
+    total: 1299,
+    status: 'Delivered',
+    statusColor: 'green',
+    tracking: {
+      ordered: true,
+      shipped: true,
+      outForDelivery: true,
+      delivered: true,
+    },
+    currentLocation: 'Delivered to Karachi',
+    estimatedDelivery: 'Delivered on Dec 3, 2025',
+  },
+  {
+    id: 'ORD-2025002',
+    date: '2025-12-10',
+    items: ['Paracetamol', 'Multivitamin'],
+    total: 899,
+    status: 'Out for Delivery',
+    statusColor: 'blue',
+    tracking: {
+      ordered: true,
+      shipped: true,
+      outForDelivery: true,
+      delivered: false,
+    },
+    currentLocation: 'In transit to Lahore',
+    estimatedDelivery: 'Today by 6 PM',
+  },
+  {
+    id: 'ORD-2025003',
+    date: '2025-12-15',
+    items: ['Antibiotic Cream', 'Bandages', 'First Aid Kit'],
+    total: 2499,
+    status: 'Processing',
+    statusColor: 'yellow',
+    tracking: {
+      ordered: true,
+      shipped: false,
+      outForDelivery: false,
+      delivered: false,
+    },
+    currentLocation: 'Being prepared for shipment',
+    estimatedDelivery: 'Expected Dec 18, 2025',
+  },
+];
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
@@ -12,6 +64,8 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showTrackOrder, setShowTrackOrder] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -97,13 +151,22 @@ export default function ProfilePage() {
             <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
             <p className="text-gray-600 mt-1">Manage your account settings and preferences</p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
-          >
-            <LogOut className="h-5 w-5" />
-            Sign Out
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowTrackOrder(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
+            >
+              <Package className="h-5 w-5" />
+              Track Orders
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
+            >
+              <LogOut className="h-5 w-5" />
+              Sign Out
+            </button>
+          </div>
         </div>
 
         {/* Alert Messages */}
@@ -307,6 +370,216 @@ export default function ProfilePage() {
             <li>• Role: <span className="font-semibold capitalize">{(session.user as any).role || 'User'}</span></li>
           </ul>
         </div>
+
+        {/* Track Order Modal */}
+        {showTrackOrder && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              {/* Modal Header */}
+              <div className="sticky top-0 bg-gradient-to-r from-[#2563eb] to-[#1d4ed8] px-6 py-4 flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                  <Package className="h-6 w-6" />
+                  Track My Orders
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowTrackOrder(false);
+                    setSelectedOrder(null);
+                  }}
+                  className="text-white hover:bg-white hover:bg-opacity-20 p-1 rounded-lg transition-colors"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6">
+                {!selectedOrder ? (
+                  // Orders List
+                  <div className="space-y-4">
+                    <p className="text-gray-600 mb-4">Click on any order to view tracking details</p>
+                    {FAKE_ORDERS.map((order) => (
+                      <button
+                        key={order.id}
+                        onClick={() => setSelectedOrder(order)}
+                        className="w-full text-left p-4 border border-gray-200 rounded-lg hover:border-[#2563eb] hover:bg-blue-50 transition-all"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="font-semibold text-gray-900">{order.id}</h3>
+                            <p className="text-sm text-gray-600 mt-1">Ordered: {order.date}</p>
+                            <p className="text-sm text-gray-600">
+                              {order.items.length} item{order.items.length > 1 ? 's' : ''}: {order.items.slice(0, 2).join(', ')}{order.items.length > 2 ? '...' : ''}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-lg text-gray-900">Rs{order.total}</p>
+                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mt-2 ${
+                              order.statusColor === 'green'
+                                ? 'bg-green-100 text-green-800'
+                                : order.statusColor === 'blue'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {order.status}
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  // Order Details with Tracking
+                  <div className="space-y-6">
+                    {/* Back Button */}
+                    <button
+                      onClick={() => setSelectedOrder(null)}
+                      className="text-[#2563eb] hover:text-[#1d4ed8] font-medium flex items-center gap-2"
+                    >
+                      ← Back to Orders
+                    </button>
+
+                    {/* Order Header */}
+                    <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900">{selectedOrder.id}</h3>
+                          <p className="text-gray-600 mt-1">Ordered on {selectedOrder.date}</p>
+                        </div>
+                        <span className={`px-4 py-2 rounded-full font-semibold ${
+                          selectedOrder.statusColor === 'green'
+                            ? 'bg-green-100 text-green-800'
+                            : selectedOrder.statusColor === 'blue'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {selectedOrder.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Tracking Timeline */}
+                    <div className="space-y-4">
+                      <h4 className="font-semibold text-gray-900 text-lg">Tracking Progress</h4>
+                      <div className="space-y-4">
+                        {/* Ordered */}
+                        <div className="flex gap-4">
+                          <div className="flex flex-col items-center">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                              selectedOrder.tracking.ordered ? 'bg-green-100' : 'bg-gray-200'
+                            }`}>
+                              <CheckCircle className={`h-6 w-6 ${
+                                selectedOrder.tracking.ordered ? 'text-green-600' : 'text-gray-400'
+                              }`} />
+                            </div>
+                            {(selectedOrder.tracking.shipped || selectedOrder.tracking.outForDelivery || selectedOrder.tracking.delivered) && (
+                              <div className={`w-1 h-12 ${
+                                selectedOrder.tracking.shipped ? 'bg-green-600' : 'bg-gray-300'
+                              }`}></div>
+                            )}
+                          </div>
+                          <div className="pt-2">
+                            <h5 className="font-semibold text-gray-900">Order Placed</h5>
+                            <p className="text-sm text-gray-600 mt-1">Your order has been confirmed</p>
+                          </div>
+                        </div>
+
+                        {/* Shipped */}
+                        <div className="flex gap-4">
+                          <div className="flex flex-col items-center">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                              selectedOrder.tracking.shipped ? 'bg-blue-100' : 'bg-gray-200'
+                            }`}>
+                              <Truck className={`h-6 w-6 ${
+                                selectedOrder.tracking.shipped ? 'text-blue-600' : 'text-gray-400'
+                              }`} />
+                            </div>
+                            {(selectedOrder.tracking.outForDelivery || selectedOrder.tracking.delivered) && (
+                              <div className={`w-1 h-12 ${
+                                selectedOrder.tracking.outForDelivery ? 'bg-green-600' : 'bg-gray-300'
+                              }`}></div>
+                            )}
+                          </div>
+                          <div className="pt-2">
+                            <h5 className="font-semibold text-gray-900">Shipped</h5>
+                            <p className="text-sm text-gray-600 mt-1">Package is on its way to you</p>
+                          </div>
+                        </div>
+
+                        {/* Out for Delivery */}
+                        <div className="flex gap-4">
+                          <div className="flex flex-col items-center">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                              selectedOrder.tracking.outForDelivery ? 'bg-blue-100' : 'bg-gray-200'
+                            }`}>
+                              <Location className={`h-6 w-6 ${
+                                selectedOrder.tracking.outForDelivery ? 'text-blue-600' : 'text-gray-400'
+                              }`} />
+                            </div>
+                            {selectedOrder.tracking.delivered && (
+                              <div className={`w-1 h-12 ${
+                                selectedOrder.tracking.delivered ? 'bg-green-600' : 'bg-gray-300'
+                              }`}></div>
+                            )}
+                          </div>
+                          <div className="pt-2">
+                            <h5 className="font-semibold text-gray-900">Out for Delivery</h5>
+                            <p className="text-sm text-gray-600 mt-1">Your package is in final delivery</p>
+                          </div>
+                        </div>
+
+                        {/* Delivered */}
+                        <div className="flex gap-4">
+                          <div className="flex flex-col items-center">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                              selectedOrder.tracking.delivered ? 'bg-green-100' : 'bg-gray-200'
+                            }`}>
+                              <CheckCircle className={`h-6 w-6 ${
+                                selectedOrder.tracking.delivered ? 'text-green-600' : 'text-gray-400'
+                              }`} />
+                            </div>
+                          </div>
+                          <div className="pt-2">
+                            <h5 className="font-semibold text-gray-900">Delivered</h5>
+                            <p className="text-sm text-gray-600 mt-1">Order completed successfully</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Current Location */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <p className="text-sm text-blue-600 font-medium">Current Location</p>
+                      <p className="text-gray-900 font-semibold mt-1">{selectedOrder.currentLocation}</p>
+                      <p className="text-sm text-gray-600 mt-2">{selectedOrder.estimatedDelivery}</p>
+                    </div>
+
+                    {/* Order Items */}
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-3">Items in this Order</h4>
+                      <ul className="space-y-2">
+                        {selectedOrder.items.map((item: string, index: number) => (
+                          <li key={index} className="flex items-center gap-2 text-gray-700">
+                            <span className="w-2 h-2 bg-[#2563eb] rounded-full"></span>
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Order Summary */}
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-gray-900">Order Total:</span>
+                        <span className="text-2xl font-bold text-[#2563eb]">Rs{selectedOrder.total}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

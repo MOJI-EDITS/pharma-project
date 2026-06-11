@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { X, Send, Bot, ShoppingCart, Upload, Pill } from 'lucide-react';
+import { X, Send, Bot, ShoppingCart, Upload, Pill, MapPin, Star } from 'lucide-react';
 import { useCartStore } from '@/lib/store/cartStore';
 import { IProduct } from '@/lib/types/Product';
 import { MedicineInfo } from '@/lib/medicines-database';
+import { DoctorInfo } from '@/lib/doctors-database';
 import SymptomInput from './SymptomInput';
 
 interface Message {
@@ -13,7 +14,9 @@ interface Message {
   sender: 'user' | 'ai';
   products?: IProduct[];
   medicines?: MedicineInfo[];
+  doctors?: DoctorInfo[];
   recommendations?: Array<{medicine: MedicineInfo; matchScore: number; reasoning: string; precautions: string[]}>;
+  doctorRecommendations?: Array<{doctor: DoctorInfo; matchScore: number; reason: string}>;
 }
 
 interface DetailedRecommendation {
@@ -21,6 +24,12 @@ interface DetailedRecommendation {
   matchScore: number;
   reasoning: string;
   precautions: string[];
+}
+
+interface DoctorRecommendation {
+  doctor: DoctorInfo;
+  matchScore: number;
+  reason: string;
 }
 
 export default function AIPharmacist() {
@@ -120,14 +129,14 @@ export default function AIPharmacist() {
     }
   };
 
-  const handleSymptomRecommendation = async (symptoms: string[], severity: 'mild' | 'moderate' | 'severe', duration: string) => {
+  const handleSymptomRecommendation = async (symptoms: string[], severity: 'mild' | 'moderate' | 'severe', duration: string, city?: string) => {
     setIsThinking(true);
     setErrorMessage(null);
     setMode('chat');
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      text: `Symptoms: ${symptoms.join(', ')} (${severity}, ${duration})`,
+      text: `Symptoms: ${symptoms.join(', ')} (${severity}, ${duration})${city ? `, Location: ${city}` : ''}`,
       sender: 'user',
     };
 
@@ -141,6 +150,7 @@ export default function AIPharmacist() {
           symptoms,
           severity,
           duration,
+          city,
         }),
       });
 
@@ -152,6 +162,8 @@ export default function AIPharmacist() {
           text: data.response,
           sender: 'ai',
           recommendations: data.recommendations,
+          doctorRecommendations: data.doctors,
+          doctors: data.doctors ? data.doctors.map((d: any) => d.doctor) : [],
         };
         setMessages(prev => [...prev, aiMessage]);
       } else {
@@ -321,6 +333,45 @@ export default function AIPharmacist() {
                           >
                             <ShoppingCart className="w-4 h-4" />
                           </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Doctor Recommendations */}
+                {msg.doctorRecommendations && msg.doctorRecommendations.length > 0 && (
+                  <div className="mt-3 space-y-2 w-full max-w-[95%]">
+                    <p className="text-xs font-semibold text-gray-600 px-2">👨‍⚕️ Recommended Doctors:</p>
+                    {msg.doctorRecommendations.slice(0, 3).map((rec, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-gradient-to-r from-blue-50 to-cyan-50 p-3 rounded-lg border border-blue-200 shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-semibold text-sm text-gray-900">Dr. {rec.doctor.name}</p>
+                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                              {rec.matchScore.toFixed(0)}% Match
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-600 mb-1 font-medium">{rec.doctor.specialization}</p>
+                          <div className="space-y-1 text-xs text-gray-700 mb-2">
+                            <p className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {rec.doctor.location}, {rec.doctor.city}
+                            </p>
+                            <p>🏥 {rec.doctor.hospital}</p>
+                            <p>📞 {rec.doctor.phone}</p>
+                            <p className="flex items-center gap-1">
+                              <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                              {rec.doctor.rating}/5.0 ({rec.doctor.reviews} reviews)
+                            </p>
+                            <p>💰 Consultation: Rs{rec.doctor.consultationFee}</p>
+                            <p>⏰ {rec.doctor.availableTime}</p>
+                            <p>👨‍💼 Experience: {rec.doctor.experience} years</p>
+                          </div>
+                          <p className="text-xs text-gray-600 italic">{rec.reason}</p>
                         </div>
                       </div>
                     ))}
